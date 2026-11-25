@@ -262,15 +262,18 @@ quando um disco esquentar, o espaço acabar, a saúde mudar, uma bateria ficar b
 - **Distribuição:** gratuito, com doação opcional (Ko-fi / GitHub Sponsors / Buy Me a Coffee), lançado em inglês
   pelo Reddit (r/pcmasterrace, r/buildapc, r/overclocking), com site próprio para download.
 
-## Próximas etapas (revistas em 09/11/2026)
+## Próximas etapas (revistas em 25/11/2026)
 
 | Etapa | Conteúdo |
 |---|---|
 | **12** | ✅ **Corewise** em tudo o que aparece (0.12.0) e ✅ **interface em inglês** (0.13.0: Configurações › Idioma, padrão = idioma do Windows). |
-| **13** | ✅ **Instalador e pareamento** (0.12.0–0.13.3): pareamento por aceite, atalhos, widget por PC, Wake-on-LAN, periféricos Bluetooth/Xbox, correções da auditoria, testes automáticos. ⏳ Falta: atualização automática. Assinatura: SignPath recusou por enquanto (11/2026); tentar de novo quando o projeto tiver histórico público. |
-| **14** | **Site**: página estática (download, recursos, capturas, doação, "o que o serviço faz e por que precisa de administrador", link do VirusTotal) e código no GitHub com licença definida (respeitando MPL 2.0 do LibreHardwareMonitor e a licença do PawnIO). |
+| **13** | ✅ **Instalador e pareamento** (0.12.0–0.13.4): pareamento por aceite, atalhos, widget por PC, Wake-on-LAN, desligar/reiniciar pelo painel, periféricos Bluetooth/Xbox, correções da auditoria, testes automáticos. Assinatura: SignPath recusou por enquanto (11/2026); tentar de novo quando o projeto tiver histórico público. |
+| **13b** | ✅ **Nodekeeper** (0.14.0): nome novo e identidade visual. ✅ **0.14.1**: controles na cor da marca, traduções, instalação do driver PawnIO pelo instalador e aviso no painel quando falta. |
+| **0.15** | ✅ **Widget**: largura ajustável (arrastar as bordas, salva por widget e por orientação) e **orientação horizontal** (categorias lado a lado, quebrando linha). ⏳ **Aviso de atualização**: o painel consulta as releases do GitHub uma vez por dia (dá para desligar; entra na política de privacidade), mostra "versão X disponível" e quais máquinas estão com o serviço antigo. Atualização automática completa só depois da assinatura digital. ⏳ **Alertas**: regras avaliadas no serviço (funcionam com o painel fechado): temperatura acima de X por N minutos, SMART ruim, volume cheio, máquina sem responder, bateria de periférico baixa; avisos por notificação do Windows no PC do painel e, opcional, ntfy / Telegram / Discord; histórico dos alertas. |
+| **0.16** | **Aba Desempenho** (como a do Gerenciador de Tarefas), na página de cada máquina: gráficos ao vivo dos últimos 60 s, com a lista à esquerda (CPU, Memória, cada disco, cada placa de rede, cada GPU) e o detalhe à direita. CPU: gráfico geral ou um por núcleo/thread, clock, processos, threads, tempo ligado. Memória: em uso, disponível, confirmada, em cache, paginada/não paginada, composição em barra. Disco: tempo ativo, leitura/gravação, tempo médio de resposta. Rede: envio/recebimento, IP. GPU: motores (3D, cópia, vídeo), memória dedicada/compartilhada, temperatura. Usa o que o serviço já coleta; falta amostragem a cada 1 s enquanto a aba estiver aberta (hoje 2 s) e os contadores por núcleo e de memória detalhada. |
+| **14** | **Site**: página estática (download, recursos, capturas, doação, "o que o serviço faz e por que precisa de administrador", driver PawnIO, link do VirusTotal). Ajuda no novo pedido de assinatura. |
 | **15** | **Ranking de benchmarks**: envio opcional pelo painel (pontuação, modelos de CPU/GPU/placa/RAM/disco, versão do teste, sensores durante o teste; sem nome do PC, série ou IP), API pequena (Cloudflare Workers + D1 ou Supabase), página de ranking com **mediana por modelo**, filtro de valores impossíveis, limite de envios, "verificado" quando os sensores batem, versão do teste congelada (CPU "v1" = workstation 1000). |
-| depois | FPS de jogos da comunidade ("vai rodar no meu PC?"), exige saber resolução e qualidade; alertas; botão "exportar diagnóstico". |
+| depois | FPS de jogos da comunidade ("vai rodar no meu PC?"), exige saber resolução e qualidade; botão "exportar diagnóstico"; agente Linux em Docker (seção 8). |
 
 Lançamento no Reddit só depois do ranking ter alguns resultados.
 
@@ -310,5 +313,5 @@ ou de outro sistema) — juntos formariam uma "versão homelab".
 
 ## Em aberto
 - Benchmark de internet: quer, mesmo usando um servidor externo?
-- Conferir marca e domínio de "Corewise" (corewise.com / .app / .io) antes do lançamento.
-- Licença do código aberto (MIT, GPL…).
+- Domínio para o site: nodekeeper.app / .dev / .io estavam livres em 11/2026 (nodekeeper.com à venda).
+- ~~Marca~~: decidido **Nodekeeper** (0.14.0). ~~Licença~~: decidido **MIT**.

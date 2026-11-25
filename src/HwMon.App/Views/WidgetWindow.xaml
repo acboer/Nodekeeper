@@ -3,10 +3,25 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:HwMon.App.ViewModels"
         xmlns:controls="clr-namespace:HwMon.App.Controls"
-        Title="Nodekeeper · widget" Width="270" SizeToContent="Height" Icon="/Assets/app.ico"
+        Title="Nodekeeper · widget" Width="270" MinWidth="200" SizeToContent="Height" Icon="/Assets/app.ico"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent" ResizeMode="NoResize"
         ShowInTaskbar="False" Topmost="{Binding Topmost}"
         FontFamily="{StaticResource Font.Text}" Foreground="{DynamicResource Text.Primary}">
+
+    <Window.Resources>
+        <!-- Bordas esquerda e direita: arrastar muda a largura (a altura acompanha o conteúdo). -->
+        <Style x:Key="EdgeGrip" TargetType="Thumb">
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Cursor" Value="SizeWE"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="#01000000"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
     <Grid Margin="8">
     <!-- Fundo separado do conteúdo: a transparência só afeta o fundo, o texto continua legível. -->
@@ -25,6 +40,10 @@
                 <MenuItem Header="Estilo">
                     <MenuItem Header="Compacto" IsCheckable="True" IsChecked="{Binding IsCompact}"/>
                     <MenuItem Header="Visual (com ícones)" IsCheckable="True" IsChecked="{Binding IsVisual}"/>
+                </MenuItem>
+                <MenuItem Header="Orientação">
+                    <MenuItem Header="Vertical" IsCheckable="True" IsChecked="{Binding IsVertical}"/>
+                    <MenuItem Header="Horizontal" IsCheckable="True" IsChecked="{Binding IsHorizontal}"/>
                 </MenuItem>
                 <MenuItem Header="Mostrar tempo de carga" IsCheckable="True" IsChecked="{Binding ShowChargeTime}"/>
                 <MenuItem Header="Transparência do fundo">
@@ -94,6 +113,22 @@
             <!-- Blocos por categoria (CPU, Memória, GPU, Armazenamento, Rede, Periféricos), com espaço entre eles.
                  Estilo compacto: título pequeno em texto. Estilo visual: ícone da categoria e valores maiores. -->
             <ItemsControl ItemsSource="{Binding Groups}" Margin="0,0,4,0">
+                <!-- Horizontal: categorias lado a lado, quebrando para a linha de baixo quando não cabem na largura. -->
+                <ItemsControl.Style>
+                    <Style TargetType="ItemsControl">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsHorizontal}" Value="True">
+                                <Setter Property="ItemsPanel">
+                                    <Setter.Value>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ItemsControl.Style>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:WidgetGroup}">
                         <StackPanel x:Name="Block" Margin="0,8,0,4">
@@ -143,11 +178,17 @@
                                 <Setter TargetName="Header" Property="Margin" Value="0,0,0,4"/>
                                 <Setter TargetName="Block" Property="Margin" Value="0,10,0,6"/>
                             </DataTrigger>
+                            <DataTrigger Binding="{Binding DataContext.IsHorizontal, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                <Setter TargetName="Block" Property="Width" Value="{x:Static vm:WidgetViewModel.ColumnWidth}"/>
+                                <Setter TargetName="Block" Property="Margin" Value="0,8,18,4"/>
+                            </DataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </StackPanel>
     </Border>
+    <Thumb Style="{StaticResource EdgeGrip}" HorizontalAlignment="Left" Margin="-5,14,0,14" DragDelta="GripLeft_DragDelta" DragCompleted="Grip_DragCompleted"/>
+    <Thumb Style="{StaticResource EdgeGrip}" HorizontalAlignment="Right" Margin="0,14,-5,14" DragDelta="GripRight_DragDelta" DragCompleted="Grip_DragCompleted"/>
     </Grid>
 </Window>

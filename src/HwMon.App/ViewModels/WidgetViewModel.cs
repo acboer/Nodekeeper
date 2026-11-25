@@ -97,6 +97,7 @@ public sealed class WidgetViewModel : ObservableObject
     {
         Raise(property);
         if (property == nameof(IsVisual)) Raise(nameof(IsCompact));
+        if (property == nameof(IsHorizontal)) Raise(nameof(IsVertical));
         if (property == nameof(BackgroundOpacity)) Raise(nameof(TransparencyPercent));
         if (property == nameof(ShowChargeTime)) OnUpdated();
     }
@@ -119,6 +120,8 @@ public sealed class WidgetViewModel : ObservableObject
         if (_current is not null) _current.Updated += OnUpdated;
         Raise(nameof(IsVisual));
         Raise(nameof(IsCompact));
+        Raise(nameof(IsHorizontal));
+        Raise(nameof(IsVertical));
         OnUpdated();
     }
 
@@ -141,6 +144,24 @@ public sealed class WidgetViewModel : ObservableObject
     }
 
     public bool IsCompact { get => !IsVisual; set => IsVisual = !value; }
+
+    /// <summary>Categorias lado a lado (quebrando linha conforme a largura), em vez de uma embaixo da outra.</summary>
+    public bool IsHorizontal
+    {
+        get => _settings.Current.Widget.Layout == "horizontal";
+        set
+        {
+            if (value == IsHorizontal) return;
+            _settings.Current.Widget.Layout = value ? "horizontal" : "vertical";
+            _settings.SaveSoon();
+            SharedChanged?.Invoke(nameof(IsHorizontal));
+        }
+    }
+
+    public bool IsVertical { get => !IsHorizontal; set => IsHorizontal = !value; }
+
+    /// <summary>Largura de cada categoria no widget horizontal (cabe "↓ Recebendo 3.48 Mbit/s").</summary>
+    public const double ColumnWidth = 165;
 
     /// <summary>Mostra "cheia em ~40 min" embaixo da bateria (só enquanto carrega).</summary>
     public bool ShowChargeTime

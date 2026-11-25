@@ -59,6 +59,11 @@ public sealed class WidgetSettings
     public List<string>? Machines { get; set; }
     /// <summary>Posição de cada widget no modo "um por PC" (MachineId → posição).</summary>
     public Dictionary<string, WidgetPosition> Positions { get; set; } = new();
+    /// <summary>"vertical" (categorias uma embaixo da outra) ou "horizontal" (lado a lado, quebrando linha).</summary>
+    public string Layout { get; set; } = "vertical";
+    /// <summary>Largura do widget único em cada orientação (arrastando as bordas); nulo = padrão.</summary>
+    public double? Width { get; set; }
+    public double? WidthHorizontal { get; set; }
     /// <summary>Atalho que mostra ou esconde todos os widgets (vazio = sem atalho).</summary>
     public string Hotkey { get; set; } = "Ctrl+Shift+F9";
 }
@@ -67,6 +72,9 @@ public sealed class WidgetPosition
 {
     public double Left { get; set; }
     public double Top { get; set; }
+    /// <summary>Largura em cada orientação (nulo = padrão).</summary>
+    public double? Width { get; set; }
+    public double? WidthHorizontal { get; set; }
 }
 
 /// <summary>Modo jogo: overlay com FPS e dados da GPU sobre o jogo.</summary>
