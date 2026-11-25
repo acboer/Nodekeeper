@@ -127,6 +127,8 @@ public sealed class TelemetrySnapshot
     public long Sequence { get; set; }
     public int DescriptorVersion { get; set; }
     public List<TelemetryValue> Values { get; set; } = new();
+    /// <summary>Alertas em andamento nesta máquina (serviço 0.15+; nulo quando não há nenhum).</summary>
+    public List<HwMon.Core.Alerts.AlertEvent>? Alerts { get; set; }
 }
 
 public sealed class TelemetryValue

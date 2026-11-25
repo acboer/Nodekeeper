@@ -26,8 +26,18 @@ public sealed class AppSettings
     /// <summary>"auto" (idioma do Windows), "pt" ou "en". Vale ao abrir o painel.</summary>
     public string Language { get; set; } = "auto";
     public UpdateSettings Updates { get; set; } = new();
+    public AlertPanelSettings Alerts { get; set; } = new();
 
     public static string Key(string machineId, string componentId) => $"{machineId}|{componentId}";
+}
+
+/// <summary>Alertas deste painel (as regras ficam no serviço de cada máquina).</summary>
+public sealed class AlertPanelSettings
+{
+    /// <summary>Notificação do Windows quando um alerta começa em qualquer máquina.</summary>
+    public bool Toasts { get; set; } = true;
+    /// <summary>Avisar quando uma máquina que estava conectada para de responder por N minutos (0 = não).</summary>
+    public int OfflineMinutes { get; set; } = 5;
 }
 
 /// <summary>Aviso de versão nova (consulta às releases do GitHub uma vez por dia).</summary>

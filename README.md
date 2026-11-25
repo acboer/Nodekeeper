@@ -18,8 +18,11 @@ Free and open source (MIT). Windows 10/11, 64-bit. English and Portuguese.
 - **Several machines**: install the service on each PC (gaming rig, NAS, render nodes) and watch them all from one
   dashboard. Pair a PC by clicking **Allow** on it, or with a one-time code. Turn an offline PC on from the
   dashboard (Wake-on-LAN).
-- **Desktop widget**: one widget that cycles through your PCs, or one widget per PC. Compact or visual style,
-  adjustable transparency, global shortcut (Ctrl+Shift+F9 by default).
+- **Alerts**: hot CPU or GPU, failing disk, full volume, low headset/mouse battery, PC not responding. Rules run in
+  each PC's service, so they work with the dashboard closed. Windows notifications on your PC, and optionally ntfy,
+  Discord or Telegram on your phone.
+- **Desktop widget**: one widget that cycles through your PCs, or one widget per PC. Vertical or horizontal, resizable,
+  compact or visual style, adjustable transparency, global shortcut (Ctrl+Shift+F9 by default).
 - **Game mode**: FPS, 1 % low and frame-time overlay on top of full-screen games, read from Windows' own events.
   Nothing is injected into the game, so there is no anti-cheat risk. Shortcut: Ctrl+Shift+F10.
 - **History**: every metric recorded for up to 2 years; game sessions with FPS, temperatures and power; daily

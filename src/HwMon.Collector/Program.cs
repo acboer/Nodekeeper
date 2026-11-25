@@ -99,6 +99,8 @@ static async Task<int> RunAsync(string[] args, string? dataDir)
     builder.Services.AddSingleton(new PairingCodes(store.PairingPath));
     builder.Services.AddSingleton<PairRequests>();
     builder.Services.AddSingleton<PowerControl>();
+    builder.Services.AddSingleton<AlertService>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<AlertService>());
 
     var app = builder.Build();
     var log = app.Logger;
@@ -108,6 +110,13 @@ static async Task<int> RunAsync(string[] args, string? dataDir)
     var jsonOptions = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions>>().Value.SerializerOptions;
     var pairGate = new SemaphoreSlim(1, 1);
     var pairQueue = 0;
+
+    // Nome do painel que fez o pedido (para o log).
+    static string ClientName(ClientRegistry clients, HttpContext http)
+    {
+        var auth = http.Request.Headers.Authorization.ToString();
+        return auth.StartsWith("Bearer ", StringComparison.Ordinal) ? clients.Validate(auth["Bearer ".Length..].Trim())?.Name ?? "outro PC" : "outro PC";
+    }
 
     // O corpo vem de fora: campo omitido ou null no JSON chega como null mesmo sendo "string" no C#.
     static bool ValidPairRequest(PairRequest? r)
@@ -269,6 +278,25 @@ static async Task<int> RunAsync(string[] args, string? dataDir)
             return Results.Problem(L.T(ex.Message), statusCode: 409);
         }
     });
+    // Alertas: regras e canais (ntfy/Discord/Telegram) desta máquina, alertas abertos e histórico.
+    api.MapGet("/alerts", (AlertService alerts) => Results.Ok(alerts.Get()));
+    api.MapPut("/alerts/rules", (List<HwMon.Core.Alerts.AlertRule>? rules, AlertService alerts, ClientRegistry clients, HttpContext http) =>
+    {
+        if (rules is null) return Results.BadRequest();
+        alerts.SetRules(rules);
+        log.LogInformation("Alertas: regras alteradas por {Client}", ClientName(clients, http));
+        return Results.Ok(alerts.Get());
+    });
+    api.MapPut("/alerts/channels", (HwMon.Core.Alerts.AlertChannels? channels, AlertService alerts, ClientRegistry clients, HttpContext http) =>
+    {
+        if (channels is null) return Results.BadRequest();
+        if (alerts.SetChannels(channels) is { } error) return Results.BadRequest(error);
+        log.LogInformation("Alertas: canais alterados por {Client}", ClientName(clients, http));
+        return Results.Ok(alerts.Get());
+    });
+    api.MapPost("/alerts/test", async (AlertService alerts, EngineHost host) => Results.Ok(await alerts.TestAsync(host.Engine?.HostName ?? Environment.MachineName)));
+    api.MapDelete("/alerts/history", (AlertService alerts) => { alerts.ClearHistory(); return Results.Ok(); });
+
     api.MapGet("/snapshot", (EngineHost host) => Results.Ok(host.Engine!.Snapshot()));
     api.MapGet("/system", async (EngineHost host, bool? refresh, CancellationToken cancel) => Results.Ok(await host.SummaryAsync(refresh == true, cancel)));
 

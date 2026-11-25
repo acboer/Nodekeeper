@@ -443,6 +443,7 @@ public sealed class MachineViewModel : ObservableObject
             WakeFailed = false;
             RaiseWake();
         }
+        OfflineSince = state.Status == ConnectionStatus.Disconnected ? state.Since : null;
         StatusText = state.Status switch
         {
             ConnectionStatus.Connected => L.T("conectado"),
@@ -488,12 +489,46 @@ public sealed class MachineViewModel : ObservableObject
             // Hora de chegada aqui, não a do relógio da outra máquina: um relógio alguns segundos atrasado (o NAS) deixava
             // "atualizado há 3 s" piscando o tempo todo, com a conexão ao vivo.
             LastUpdate = DateTimeOffset.Now;
+            UpdateAlerts(s.Alerts);
         }
 
         Refresh();
         Updated?.Invoke();
         if (Status == ConnectionStatus.Connected && Cards.Count > 0) _ = RefreshStatsAsync();
     }
+
+    // ------------------------------------------------------------------ alertas
+
+    private readonly HashSet<long> _seenAlerts = new();
+    private bool _alertsPrimed;
+
+    /// <summary>Alertas em andamento nesta máquina (vêm em cada snapshot do serviço 0.15+).</summary>
+    public IReadOnlyList<HwMon.Core.Alerts.AlertEvent> ActiveAlerts { get; private set; } = [];
+
+    /// <summary>Desde quando a máquina não responde (nulo = conectada ou conectando).</summary>
+    public DateTimeOffset? OfflineSince { get; private set; }
+
+    /// <summary>Alerta novo em alguma máquina (o App mostra a notificação do Windows).</summary>
+    public static event Action<MachineViewModel, HwMon.Core.Alerts.AlertEvent>? AlertRaised;
+
+    private void UpdateAlerts(List<HwMon.Core.Alerts.AlertEvent>? alerts)
+    {
+        var list = alerts ?? [];
+        foreach (var a in list)
+        {
+            // Ao abrir o painel (primeiro snapshot), só avisa o que começou há pouco; depois, todo alerta novo.
+            if (_seenAlerts.Add(a.Id) && (_alertsPrimed || DateTimeOffset.Now - a.Start < TimeSpan.FromMinutes(10)))
+                AlertRaised?.Invoke(this, a);
+        }
+        _alertsPrimed = true;
+        var changed = list.Count != ActiveAlerts.Count || list.Zip(ActiveAlerts).Any(p => p.First.Id != p.Second.Id || p.First.Value != p.Second.Value);
+        if (!changed) return;
+        ActiveAlerts = list;
+        Raise(nameof(ActiveAlerts));
+        Raise(nameof(HasAlerts));
+    }
+
+    public bool HasAlerts => ActiveAlerts.Count > 0;
 
     public void RefreshAge()
     {

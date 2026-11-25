@@ -366,6 +366,32 @@ public sealed class CollectorClient : IDisposable
         return await Read<PowerResponse>(response, timeout.Token);
     }
 
+    // ---- alertas (serviço 0.15+)
+    public Task<HwMon.Core.Alerts.AlertsResponse> AlertsAsync(CancellationToken cancel = default) => GetAsync<HwMon.Core.Alerts.AlertsResponse>("v1/alerts", cancel);
+
+    public async Task<HwMon.Core.Alerts.AlertsResponse> SetAlertRulesAsync(List<HwMon.Core.Alerts.AlertRule> rules, CancellationToken cancel = default)
+    {
+        using var timeout = Timeout(cancel, TimeSpan.FromSeconds(15));
+        var response = await Send(() => _http.PutAsJsonAsync("v1/alerts/rules", rules, Json, timeout.Token));
+        return await Read<HwMon.Core.Alerts.AlertsResponse>(response, timeout.Token);
+    }
+
+    public async Task<HwMon.Core.Alerts.AlertsResponse> SetAlertChannelsAsync(HwMon.Core.Alerts.AlertChannels channels, CancellationToken cancel = default)
+    {
+        using var timeout = Timeout(cancel, TimeSpan.FromSeconds(15));
+        var response = await Send(() => _http.PutAsJsonAsync("v1/alerts/channels", channels, Json, timeout.Token));
+        return await Read<HwMon.Core.Alerts.AlertsResponse>(response, timeout.Token);
+    }
+
+    public async Task<List<HwMon.Core.Alerts.AlertTestResult>> TestAlertsAsync(CancellationToken cancel = default)
+    {
+        using var timeout = Timeout(cancel, TimeSpan.FromSeconds(60));
+        var response = await Send(() => _http.PostAsync("v1/alerts/test", null, timeout.Token));
+        return await Read<List<HwMon.Core.Alerts.AlertTestResult>>(response, timeout.Token);
+    }
+
+    public Task ClearAlertHistoryAsync(CancellationToken cancel = default) => DeleteAsync("v1/alerts/history", cancel);
+
     public Task<PairAskStatus> PairStatusAsync(string id, CancellationToken cancel = default)
         => GetAsync<PairAskStatus>($"v1/pair/ask/{Uri.EscapeDataString(id)}", cancel);
 

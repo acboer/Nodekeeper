@@ -506,8 +506,12 @@ public sealed class TelemetryEngine : IDisposable
             Sequence = Interlocked.Read(ref _sequence),
             DescriptorVersion = version,
             Values = values.OrderBy(v => v.Component).ThenBy(v => v.Metric).ToList(),
+            Alerts = ActiveAlerts is { Count: > 0 } alerts ? alerts.ToList() : null,
         };
     }
+
+    /// <summary>Alertas abertos, mantidos pelo serviço (AlertService); vão em cada snapshot para o painel avisar.</summary>
+    public IReadOnlyList<HwMon.Core.Alerts.AlertEvent> ActiveAlerts { get; set; } = [];
 
     public long Sequence => Interlocked.Read(ref _sequence);
 

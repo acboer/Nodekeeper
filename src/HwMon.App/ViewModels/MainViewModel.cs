@@ -29,6 +29,8 @@ public sealed class MainViewModel : ObservableObject
         NavItems.Add(Sensors); // as máquinas entram entre a Visão geral e Sensores
         HistoryHub = new HistoryHubViewModel(Machines);
         NavItems.Add(HistoryHub);
+        Alerts = new AlertsViewModel(Machines, settings);
+        NavItems.Add(Alerts);
         foreach (var m in store.List()) AddMachine(m);
         Widget = new WidgetViewModel(Machines, settings);
         Updates = new UpdateChecker(settings);
@@ -39,7 +41,11 @@ public sealed class MainViewModel : ObservableObject
         ToggleCustomizeCommand = new RelayCommand(() => IsCustomizing = !IsCustomizing);
 
         _clock = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-        _clock.Tick += (_, _) => { foreach (var m in Machines) m.RefreshAge(); };
+        _clock.Tick += (_, _) =>
+        {
+            foreach (var m in Machines) m.RefreshAge();
+            Alerts.Tick();
+        };
         _clock.Start();
     }
 
@@ -48,6 +54,7 @@ public sealed class MainViewModel : ObservableObject
     public OverviewViewModel Overview { get; }
     public SensorsViewModel Sensors { get; }
     public HistoryHubViewModel HistoryHub { get; }
+    public AlertsViewModel Alerts { get; }
     public WidgetViewModel Widget { get; }
     /// <summary>Aviso de versão nova (barra lateral e Configurações).</summary>
     public UpdateChecker Updates { get; }
@@ -77,6 +84,7 @@ public sealed class MainViewModel : ObservableObject
             }
             ShowingSettings = false;
             HistoryHub.SetActive(_selected == HistoryHub);
+            if (_selected == Alerts) Alerts.Activate();
             Raise(nameof(Page));
         }
     }

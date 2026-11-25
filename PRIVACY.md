@@ -7,8 +7,13 @@ user.
 
 - Sensor readings, usage history, game sessions and benchmark results are stored locally in
   `C:\ProgramData\Nodekeeper` (service) and `%AppData%\Nodekeeper` (dashboard).
-- Nodekeeper has no telemetry, analytics, accounts, ads or crash reporting. The service never contacts the internet.
-- Two exceptions, both plain downloads that send nothing about you or your PCs:
+- Nodekeeper has no telemetry, analytics, accounts, ads or crash reporting.
+- **Alert channels (off unless you set them up):** if you enter an ntfy topic, a Discord webhook or a Telegram bot
+  on the Alerts page, that machine's service sends the alert title and text (for example "NAS: Volume almost full —
+  D: is 96 % full") to that service when an alert starts or ends, and when you press **Send test**. Nothing else is
+  sent. The webhook URL and bot token are stored only in that machine's `C:\ProgramData\Nodekeeper\alertas.json`.
+- Apart from that, the service never contacts the internet. Two more exceptions, both plain downloads that send
+  nothing about you or your PCs:
   - **Update notice** (dashboard, on by default; Settings › Updates turns it off): once a day the dashboard reads the
     public list of Nodekeeper releases from GitHub (`api.github.com/repos/acboer/Nodekeeper/releases`) to tell you
     when a new version is out. It downloads and installs nothing.

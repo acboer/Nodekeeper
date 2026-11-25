@@ -996,6 +996,172 @@
             </ScrollViewer>
         </DataTemplate>
 
+        <!-- ============================== Página: alertas ============================== -->
+        <DataTemplate DataType="{x:Type vm:AlertsViewModel}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="28,22,28,28" MaxWidth="1100" HorizontalAlignment="Left">
+                    <TextBlock Text="Alertas" Style="{StaticResource Text.PageTitle}"/>
+                    <TextBlock Style="{StaticResource Text.PageSubtitle}" Margin="0,4,0,16" TextWrapping="Wrap"
+                               Text="As regras ficam no serviço de cada máquina e valem mesmo com o painel fechado. Este painel mostra a notificação do Windows; para receber no celular, configure o ntfy, o Discord ou o Telegram da máquina."/>
+
+                    <!-- Agora -->
+                    <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Agora" Style="{StaticResource Text.CardTitle}"/>
+                            <TextBlock Text="Nenhum alerta em andamento." Style="{StaticResource Caption}" FontSize="13" Margin="0,8,0,0"
+                                       Visibility="{Binding HasActive, Converter={StaticResource BoolToCollapsed}}"/>
+                            <ItemsControl ItemsSource="{Binding Active}" Margin="0,6,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,6,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <controls:Icon Kind="status-critical" Width="16" Height="16" VerticalAlignment="Top" Margin="0,2,10,0" Foreground="{DynamicResource Status.CriticalText}"/>
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock FontSize="13" FontWeight="SemiBold">
+                                                    <Run Text="{Binding Machine, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding Title, Mode=OneWay}"/>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Body}" Style="{StaticResource Caption}" FontSize="12" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="{Binding When}" Style="{StaticResource Caption}" FontSize="12" Margin="12,0,0,0"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Neste painel -->
+                    <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Neste painel" Style="{StaticResource Text.CardTitle}"/>
+                            <CheckBox Content="Mostrar notificação do Windows quando um alerta começar em qualquer máquina" IsChecked="{Binding Toasts}" Margin="0,10,0,0" FontSize="13"/>
+                            <CheckBox Content="Avisar quando uma máquina que estava conectada ficar 5 minutos sem responder" IsChecked="{Binding OfflineAlerts}" Margin="0,6,0,0" FontSize="13"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Regras e canais da máquina -->
+                    <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,0,0,12">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Regras da máquina" Style="{StaticResource Text.CardTitle}" VerticalAlignment="Center"/>
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding Machines}" SelectedItem="{Binding Selected}" DisplayMemberPath="Name" MinWidth="180" Margin="14,0,0,0"/>
+                                <TextBlock Grid.Column="2" Text="Carregando..." Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="12,0,0,0"
+                                           Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}"/>
+                            </Grid>
+                            <TextBlock Text="{Binding Error}" Foreground="{DynamicResource Status.CautionText}" FontSize="12" TextWrapping="Wrap" Margin="0,10,0,0"
+                                       Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}"/>
+
+                            <StackPanel Visibility="{Binding Supported, Converter={StaticResource BoolToVisibility}}">
+                                <ItemsControl ItemsSource="{Binding Rules}" Margin="0,8,0,0">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:AlertRuleItem}">
+                                            <Grid Margin="0,8,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="240"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox Content="{Binding Name}" IsChecked="{Binding Enabled}" FontSize="13" VerticalAlignment="Center"/>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal" Visibility="{Binding HasThreshold, Converter={StaticResource BoolToVisibility}}">
+                                                        <TextBlock Text="{Binding Comparison}" Style="{StaticResource Caption}" FontSize="13" VerticalAlignment="Center"/>
+                                                        <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="64" Margin="8,0,6,0" FontSize="13"/>
+                                                        <TextBlock Text="{Binding Unit}" Style="{StaticResource Caption}" FontSize="13" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="por" Style="{StaticResource Caption}" FontSize="13" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                                        <TextBox Text="{Binding Minutes, UpdateSourceTrigger=PropertyChanged}" Width="52" Margin="8,0,6,0" FontSize="13"/>
+                                                        <TextBlock Text="min" Style="{StaticResource Caption}" FontSize="13" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Description}" Style="{StaticResource Caption}" FontSize="12" VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap" MaxWidth="420"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <Button Content="Salvar regras" Style="{StaticResource AccentButton}" HorizontalAlignment="Left" Margin="0,14,0,0" Command="{Binding SaveRulesCommand}"/>
+
+                                <TextBlock Text="Avisar também por" Style="{StaticResource Text.CardTitle}" Margin="0,22,0,0"/>
+                                <TextBlock Style="{StaticResource Caption}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
+                                           Text="Opcional. Quem envia é o serviço desta máquina, pela internet, só o título e o texto do alerta. Os segredos aparecem como ••• depois de salvos; para trocar, digite de novo."/>
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="170"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition/>
+                                        <RowDefinition/>
+                                        <RowDefinition/>
+                                        <RowDefinition/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="ntfy (URL do tópico)" Style="{StaticResource Text.Label}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" Text="{Binding NtfyUrl, UpdateSourceTrigger=PropertyChanged}" Margin="0,4" FontSize="13" ToolTip="Ex.: https://ntfy.sh/meu-nas-1234 (instale o app ntfy no celular e assine o mesmo tópico)"/>
+                                    <TextBlock Grid.Row="1" Text="Discord (webhook)" Style="{StaticResource Text.Label}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding DiscordWebhook, UpdateSourceTrigger=PropertyChanged}" Margin="0,4" FontSize="13" ToolTip="Canal › Editar canal › Integrações › Webhooks › Copiar URL"/>
+                                    <TextBlock Grid.Row="2" Text="Telegram (token do bot)" Style="{StaticResource Text.Label}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding TelegramToken, UpdateSourceTrigger=PropertyChanged}" Margin="0,4" FontSize="13" ToolTip="Crie um bot com o @BotFather"/>
+                                    <TextBlock Grid.Row="3" Text="Telegram (ID do chat)" Style="{StaticResource Text.Label}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding TelegramChatId, UpdateSourceTrigger=PropertyChanged}" Margin="0,4" FontSize="13"/>
+                                </Grid>
+                                <CheckBox Content="Avisar também quando o problema passar" IsChecked="{Binding NotifyResolved}" Margin="0,10,0,0" FontSize="13"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                                    <Button Content="Salvar canais" Style="{StaticResource AccentButton}" Command="{Binding SaveChannelsCommand}"/>
+                                    <Button Content="Enviar teste" Style="{StaticResource FlatButton}" Margin="8,0,0,0" Command="{Binding TestCommand}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding Status}" Style="{StaticResource Caption}" FontSize="12" TextWrapping="Wrap" Margin="0,10,0,0"
+                                           Visibility="{Binding Status, Converter={StaticResource NullToVisibility}}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Histórico da máquina -->
+                    <Border Style="{StaticResource Card}" Padding="18,14" Visibility="{Binding Supported, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Style="{StaticResource Text.CardTitle}">
+                                    <Run Text="{controls:T 'Histórico de'}"/><Run Text=" "/><Run Text="{Binding Selected.Name, Mode=OneWay}"/>
+                                </TextBlock>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button Content="Atualizar" Style="{StaticResource FlatButton}" Command="{Binding ReloadCommand}"/>
+                                    <Button Content="Limpar histórico" Style="{StaticResource FlatButton}" Margin="8,0,0,0" Command="{Binding ClearHistoryCommand}"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="Nenhum alerta registrado." Style="{StaticResource Caption}" FontSize="13" Margin="0,8,0,0"
+                                       Visibility="{Binding HasHistory, Converter={StaticResource BoolToCollapsed}}"/>
+                            <ItemsControl ItemsSource="{Binding History}" Margin="0,6,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,6,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding Body}" Style="{StaticResource Caption}" FontSize="12" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding When}" Style="{StaticResource Caption}" FontSize="12" Margin="12,0,0,0"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </DataTemplate>
+
         <!-- ============================== Página: máquina ============================== -->
         <DataTemplate DataType="{x:Type vm:MachineViewModel}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -1734,6 +1900,17 @@
                                 <controls:Icon Kind="feature-history" Width="18" Height="18" VerticalAlignment="Center"/>
                                 <TextBlock Text="Histórico" Margin="10,0,0,0" Style="{StaticResource Text.Nav}"
                                            Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                        <DataTemplate DataType="{x:Type vm:AlertsViewModel}">
+                            <StackPanel Orientation="Horizontal">
+                                <controls:Icon Kind="status-caution" Width="18" Height="18" VerticalAlignment="Center"/>
+                                <TextBlock Text="Alertas" Margin="10,0,0,0" Style="{StaticResource Text.Nav}"
+                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"/>
+                                <Border Background="{DynamicResource Status.Critical}" CornerRadius="8" Padding="6,0" Margin="8,0,0,0" VerticalAlignment="Center"
+                                        Visibility="{Binding HasActive, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="{Binding ActiveCount}" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
+                                </Border>
                             </StackPanel>
                         </DataTemplate>
                         <DataTemplate DataType="{x:Type vm:MachineViewModel}">

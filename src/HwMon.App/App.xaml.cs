@@ -95,6 +95,12 @@ public partial class App : Application
 
         _vm = new MainViewModel(settings, new MachineStore(profile));
         _tray = new TrayIcon(this, _vm);
+        // Alertas: notificação do Windows pelo ícone da bandeja (alerta novo em qualquer máquina, máquina sem resposta).
+        MachineViewModel.AlertRaised += (m, alert) => Dispatcher.Invoke(() =>
+        {
+            if (_vm.Settings.Current.Alerts.Toasts) _tray?.ShowHint(HwMon.Core.Alerts.AlertText.Title(alert, m.Name), HwMon.Core.Alerts.AlertText.Body(alert));
+        });
+        _vm.Alerts.Notify += (title, text) => _tray?.ShowHint(title, text);
         _gameMode = new GameModeService(this, _vm, settings);
         if (profile is null) _ = LocalPairing.RunAsync(_vm);
         _pairWatcher = new PairRequestWatcher(_vm);
