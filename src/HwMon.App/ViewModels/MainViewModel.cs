@@ -31,7 +31,8 @@ public sealed class MainViewModel : ObservableObject
         NavItems.Add(HistoryHub);
         foreach (var m in store.List()) AddMachine(m);
         Widget = new WidgetViewModel(Machines, settings);
-        SettingsPage = new SettingsViewModel(settings, Widget);
+        Updates = new UpdateChecker(settings);
+        SettingsPage = new SettingsViewModel(settings, Widget, Updates);
         Selected = Overview;
 
         OpenCommand = new RelayCommand(p => { if (p is MachineViewModel m && !IsCustomizingOverview) Selected = m; });
@@ -48,6 +49,8 @@ public sealed class MainViewModel : ObservableObject
     public SensorsViewModel Sensors { get; }
     public HistoryHubViewModel HistoryHub { get; }
     public WidgetViewModel Widget { get; }
+    /// <summary>Aviso de versão nova (barra lateral e Configurações).</summary>
+    public UpdateChecker Updates { get; }
     public ObservableCollection<MachineViewModel> Machines { get; } = new();
     public ObservableCollection<object> NavItems { get; } = new();
     public RelayCommand OpenCommand { get; }

@@ -231,6 +231,11 @@ public sealed class MachineViewModel : ObservableObject
         ? L.T("Falta o driver PawnIO nesta máquina: sem ele não aparecem a temperatura e o consumo da CPU, as ventoinhas e a temperatura da RAM. Instale por pawnio.eu (ou reinstale o Nodekeeper nela) e reinicie o serviço Nodekeeper.")
         : null;
 
+    /// <summary>O serviço da máquina é de uma versão anterior à deste painel.</summary>
+    public string? ServiceVersionHint => UpdateChecker.Parse(_descriptor?.AgentVersion) is { } v && v < UpdateChecker.Current
+        ? L.T("O serviço desta máquina está na versão {0} e este painel na {1}. Instale a versão nova nela para ter as correções do serviço.", v.ToString(3), UpdateChecker.Current.ToString(3))
+        : null;
+
     /// <summary>Há um desligamento/reinício/suspensão agendado (mostra Cancelar).</summary>
     public bool IsPowerPending => _powerAt is not null;
 
@@ -465,6 +470,7 @@ public sealed class MachineViewModel : ObservableObject
             Raise(nameof(IsNas));
             Raise(nameof(MachineIcon));
             Raise(nameof(DriverHint));
+            Raise(nameof(ServiceVersionHint));
             Rebuild();
         }
 

@@ -7,11 +7,14 @@ user.
 
 - Sensor readings, usage history, game sessions and benchmark results are stored locally in
   `C:\ProgramData\Nodekeeper` (service) and `%AppData%\Nodekeeper` (dashboard).
-- Nodekeeper has no telemetry, analytics, accounts, ads or crash reporting. The dashboard and the service do not
-  contact any server on the internet.
-- The only exception is the installer: if the PawnIO sensor driver is missing and you leave **Install the PawnIO
-  driver** checked, it downloads the official PawnIO installer from GitHub
-  (`github.com/namazso/PawnIO.Setup/releases`). That is a plain file download; nothing about you or your PC is sent.
+- Nodekeeper has no telemetry, analytics, accounts, ads or crash reporting. The service never contacts the internet.
+- Two exceptions, both plain downloads that send nothing about you or your PCs:
+  - **Update notice** (dashboard, on by default; Settings › Updates turns it off): once a day the dashboard reads the
+    public list of Nodekeeper releases from GitHub (`api.github.com/repos/acboer/Nodekeeper/releases`) to tell you
+    when a new version is out. It downloads and installs nothing.
+  - **Installer**: if the PawnIO sensor driver is missing and you leave **Install the PawnIO driver** checked, it
+    downloads the official PawnIO installer from GitHub (`github.com/namazso/PawnIO.Setup/releases`).
+- GitHub sees these requests like any web request (your IP address); see GitHub's privacy statement.
 
 ## What is shared on your local network, and only when you ask
 

@@ -16,8 +16,9 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly WidgetViewModel _widget;
     private string? _startupError;
 
-    public SettingsViewModel(SettingsStore settings, WidgetViewModel widget)
+    public SettingsViewModel(SettingsStore settings, WidgetViewModel widget, UpdateChecker updates)
     {
+        Updates = updates;
         _settings = settings;
         _widget = widget;
         widget.PropertyChanged += (_, e) =>
@@ -238,6 +239,7 @@ public sealed class SettingsViewModel : ObservableObject
     // ------------------------------------------------------------------ sobre
 
     public string Version => L.T("Versão") + " " + (Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "?");
+    public UpdateChecker Updates { get; }
     public RelayCommand OpenDataFolderCommand { get; }
     public RelayCommand ShowPairCodeCommand { get; }
 

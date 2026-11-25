@@ -25,8 +25,18 @@ public sealed class AppSettings
     public string Theme { get; set; } = "system";
     /// <summary>"auto" (idioma do Windows), "pt" ou "en". Vale ao abrir o painel.</summary>
     public string Language { get; set; } = "auto";
+    public UpdateSettings Updates { get; set; } = new();
 
     public static string Key(string machineId, string componentId) => $"{machineId}|{componentId}";
+}
+
+/// <summary>Aviso de versão nova (consulta às releases do GitHub uma vez por dia).</summary>
+public sealed class UpdateSettings
+{
+    public bool Check { get; set; } = true;
+    public DateTimeOffset? LastCheck { get; set; }
+    /// <summary>Versão mais nova publicada na última consulta (ex.: "0.15.1").</summary>
+    public string? Latest { get; set; }
 }
 
 public sealed class WindowPlacement

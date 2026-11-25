@@ -71,8 +71,9 @@ The uninstaller removes the service, the firewall rule and the startup entry. Yo
 ## Privacy
 
 This program will not transfer any information to other networked systems unless specifically requested by the
-user. No telemetry, no accounts, no internet access: the service only answers the dashboards you pair on your own
-network. Details in [PRIVACY.md](PRIVACY.md).
+user. No telemetry, no accounts: the service only answers the dashboards you pair on your own network and never
+goes online. The dashboard checks GitHub once a day for a new version (you can turn it off in Settings), and the
+installer downloads the PawnIO driver if it's missing. Details in [PRIVACY.md](PRIVACY.md).
 
 ## Code signing
 
