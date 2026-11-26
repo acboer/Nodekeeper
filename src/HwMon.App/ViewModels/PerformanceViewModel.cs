@@ -138,8 +138,8 @@ public sealed class PerfDevice : ObservableObject
         }
     }
     public bool Overall { get => !_perCore; set => PerCore = !value; }
-    public bool ShowMain => !(IsCpu && _perCore);
-    public bool ShowMinis => HasMinis && (IsGpu || (IsCpu && _perCore));
+    public bool ShowMain => !(IsCpu && _perCore && _live);
+    public bool ShowMinis => _live && HasMinis && (IsGpu || (IsCpu && _perCore));
 
     public PerfStat Stat(string label)
     {
@@ -149,8 +149,70 @@ public sealed class PerfDevice : ObservableObject
         return s;
     }
 
+    // ------------------------------------------------------------------ temperatura sobreposta
+
+    /// <summary>Temperatura (CPU, GPU, disco), desenhada por cima do gráfico grande com escala própria até 100 °C.</summary>
+    public PerfSeries Overlay { get; } = new();
+    public bool HasOverlay => Overlay.Max > 0 || (_history?.Overlay is { Count: > 0 });
+    public double OverlayMaximum => 100;
+
+    // ------------------------------------------------------------------ janela de tempo
+
+    /// <summary>Séries de uma janela longa (10 min, 1 h, 24 h), lidas do histórico do serviço.</summary>
+    public sealed record HistoryView(IReadOnlyList<double> Main, IReadOnlyList<double>? Second, IReadOnlyList<double>? Overlay,
+        IReadOnlyList<double>? Rate, IReadOnlyList<double>? Rate2, int Capacity, double Maximum, string ScaleText, double Maximum2, string Scale2Text);
+
+    private HistoryView? _history;
+    private bool _live = true;
+    private string _rangeLabel = L.T("60 segundos");
+
+    /// <summary>Janela de 60 s ao vivo (padrão) ou longa, lida do histórico.</summary>
+    public bool Live => _live;
+    public string RangeLabel { get => _rangeLabel; private set => Set(ref _rangeLabel, value); }
+
+    public void ShowLive()
+    {
+        _live = true;
+        _history = null;
+        RangeLabel = L.T("60 segundos");
+        Changed();
+    }
+
+    public void ShowHistory(HistoryView? view, string label)
+    {
+        _live = false;
+        _history = view;
+        RangeLabel = label;
+        Changed();
+    }
+
+    private static readonly IReadOnlyList<double> Empty = Array.Empty<double>();
+    public IReadOnlyList<double> ChartValues => _live ? Values : _history?.Main ?? Empty;
+    public IReadOnlyList<double>? ChartValues2 => _live ? Values2 : _history?.Second;
+    public IReadOnlyList<double>? ChartOverlay => !HasOverlay ? null : _live ? Overlay.Values : _history?.Overlay;
+    public IReadOnlyList<double>? ChartRate => _live ? RateValues : _history?.Rate;
+    public IReadOnlyList<double>? ChartRate2 => _live ? RateValues2 : _history?.Rate2;
+    public int ChartCapacity => _live ? PerfSeries.Length : Math.Max(2, _history?.Capacity ?? 2);
+    public double ChartMaximum => _live ? Maximum : _history?.Maximum ?? Maximum;
+    public string ChartScaleText => _live ? ScaleText : _history?.ScaleText ?? ScaleText;
+    public double ChartMaximum2 => _live ? Maximum2 : _history?.Maximum2 ?? Maximum2;
+    public string ChartScale2Text => _live ? Scale2Text : _history?.Scale2Text ?? Scale2Text;
+
     public void Changed()
     {
+        Raise(nameof(HasOverlay));
+        Raise(nameof(Live));
+        Raise(nameof(ChartValues));
+        Raise(nameof(ChartValues2));
+        Raise(nameof(ChartOverlay));
+        Raise(nameof(ChartRate));
+        Raise(nameof(ChartRate2));
+        Raise(nameof(ChartCapacity));
+        Raise(nameof(ChartMaximum));
+        Raise(nameof(ChartScaleText));
+        Raise(nameof(ChartMaximum2));
+        Raise(nameof(ChartScale2Text));
+        Raise(nameof(ShowMain));
         Raise(nameof(MiniColumns));
         Raise(nameof(HasMinis));
         Raise(nameof(ShowMinis));
@@ -193,9 +255,130 @@ public sealed class PerformanceViewModel : ObservableObject
         {
             if (value is null || !Set(ref _selected, value)) return;
             foreach (var d in Devices) d.IsSelected = d == value;
+            if (_range != 60) _ = LoadHistoryAsync(force: true);
         }
     }
 
+
+    // ------------------------------------------------------------------ janela de tempo
+
+    private int _range = 60;
+    private DateTimeOffset _historyLoaded = DateTimeOffset.MinValue;
+    private string? _historyFor;
+    private string? _historyError;
+
+    /// <summary>Janela dos gráficos em segundos: 60 (ao vivo), 600, 3600 ou 86400 (do histórico do serviço).</summary>
+    public int Range
+    {
+        get => _range;
+        set
+        {
+            if (!Set(ref _range, value)) return;
+            Raise(nameof(Range60));
+            Raise(nameof(Range10m));
+            Raise(nameof(Range1h));
+            Raise(nameof(Range24h));
+            HistoryError = null;
+            if (value == 60)
+            {
+                foreach (var d in Devices) d.ShowLive();
+                return;
+            }
+            foreach (var d in Devices) d.ShowHistory(null, RangeText(value));
+            _ = LoadHistoryAsync(force: true);
+        }
+    }
+
+    public bool Range60 { get => _range == 60; set { if (value) Range = 60; } }
+    public bool Range10m { get => _range == 600; set { if (value) Range = 600; } }
+    public bool Range1h { get => _range == 3600; set { if (value) Range = 3600; } }
+    public bool Range24h { get => _range == 86400; set { if (value) Range = 86400; } }
+    public string? HistoryError { get => _historyError; private set => Set(ref _historyError, value); }
+
+    private static string RangeText(int seconds) => seconds switch
+    {
+        600 => L.T("10 minutos"),
+        3600 => L.T("1 hora"),
+        _ => L.T("24 horas"),
+    };
+
+    /// <summary>Quanto esperar para reler o histórico: a resolução dele (10 s, 1 min, 1 h) torna mais que isso inútil.</summary>
+    private static TimeSpan RefreshEvery(int seconds) => seconds switch
+    {
+        600 => TimeSpan.FromSeconds(10),
+        3600 => TimeSpan.FromSeconds(30),
+        _ => TimeSpan.FromMinutes(5),
+    };
+
+    /// <summary>
+    /// Janela longa: lê do histórico do serviço só o dispositivo escolhido (as séries do gráfico grande). Cada ponto
+    /// vai para a posição do seu horário; intervalo sem dados (PC desligado) fica em zero.
+    /// </summary>
+    private async Task LoadHistoryAsync(bool force)
+    {
+        if (_range == 60 || _selected is not { } d) return;
+        if (!force && _historyFor == d.Id && DateTimeOffset.Now - _historyLoaded < RefreshEvery(_range)) return;
+        _historyFor = d.Id;
+        _historyLoaded = DateTimeOffset.Now;
+        var range = _range;
+        var label = RangeText(range);
+        var to = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var from = to - range;
+        try
+        {
+            _client ??= CollectorClient.For(_machine.Machine);
+            var client = _client;
+            async Task<(double[] Values, int Capacity)?> Load(string metric)
+            {
+                var r = await client.HistoryAsync(d.Id, metric, from, to, 240);
+                if (r.Points.Count == 0) return null;
+                var step = Math.Max(1, r.StepSeconds);
+                var count = (int)Math.Clamp((to - from) / step, 2, 2000);
+                var values = new double[count];
+                foreach (var p in r.Points)
+                {
+                    var i = (int)Math.Clamp((p.T - from) / step, 0, count - 1);
+                    values[i] = Math.Max(0, p.Avg);
+                }
+                return (values, count);
+            }
+
+            string main1 = d.Kind switch { "memory" => "used", "disk" => "active", "net" => "rx", _ => "usage" };
+            var main = await Load(main1);
+            var second = d.IsNet ? await Load("tx") : null;
+            var overlay = d.Kind is "cpu" or "gpu" or "disk" ? await Load("temp") : null;
+            var rate = d.IsDisk ? await Load("read") : null;
+            var rate2 = d.IsDisk ? await Load("write") : null;
+            if (_range != range || _selected != d) return; // trocou de janela ou de dispositivo enquanto lia
+
+            var max = d.Maximum;
+            var scale = d.ScaleText;
+            if (d.IsNet)
+            {
+                max = NiceMax(Math.Max(main?.Values.Max() ?? 0, second?.Values.Max() ?? 0), 0.1);
+                scale = N(max, "Mbit/s");
+            }
+            var max2 = d.Maximum2;
+            var scale2 = d.Scale2Text;
+            if (d.IsDisk)
+            {
+                max2 = NiceMax(Math.Max(rate?.Values.Max() ?? 0, rate2?.Values.Max() ?? 0), 1);
+                scale2 = N(max2, "MB/s");
+            }
+            d.ShowHistory(new PerfDevice.HistoryView(main?.Values ?? [], second?.Values, overlay?.Values, rate?.Values, rate2?.Values,
+                main?.Capacity ?? 2, max, scale, max2, scale2), label);
+            HistoryError = main is null ? L.T("Ainda não há histórico deste dispositivo nesse período.") : null;
+        }
+        catch (CollectorException ex) when (ex.Status == HttpStatusCode.NotFound)
+        {
+            HistoryError = L.T("O histórico está desligado nesta máquina.");
+            d.ShowHistory(null, label);
+        }
+        catch (Exception ex) when (ex is CollectorException or HttpRequestException or TaskCanceledException or IOException)
+        {
+            HistoryError = L.T("Não foi possível ler o histórico: {0}", ex.Message);
+        }
+    }
 
     /// <summary>Serviço 0.16+: tem núcleos, motores da GPU, memória detalhada e resposta dos discos.</summary>
     public bool DetailSupported { get => _detailSupported; private set { if (Set(ref _detailSupported, value)) Raise(nameof(DetailHint)); } }
@@ -262,6 +445,11 @@ public sealed class PerformanceViewModel : ObservableObject
             Devices.Add(new PerfDevice("gpu", gpus[i].Id, $"GPU {i}", gpus[i].Name, gpus[i].Detail) { ChartTitle = L.T("% de utilização") });
 
         Selected = Devices.FirstOrDefault(d => d.Id == selectedId) ?? Devices.FirstOrDefault();
+        if (_range != 60)
+        {
+            foreach (var d in Devices) d.ShowHistory(null, RangeText(_range));
+            _ = LoadHistoryAsync(force: true);
+        }
     }
 
     // ------------------------------------------------------------------ atualização
@@ -303,6 +491,7 @@ public sealed class PerformanceViewModel : ObservableObject
                 }
                 d.Changed();
             }
+            if (_range != 60) await LoadHistoryAsync(force: false);
         }
         finally
         {
@@ -325,7 +514,11 @@ public sealed class PerformanceViewModel : ObservableObject
         d.Subtitle = $"{N(usage, "%")}  {N(clock, "MHz")}";
         d.Stat("Utilização").Value = N(usage, "%");
         d.Stat("Velocidade").Value = N(clock, "MHz");
-        if (V(d.Id, "temp") is { } temp) d.Stat("Temperatura").Value = N(temp, "°C");
+        var cpuTemp = V(d.Id, "temp");
+        d.Overlay.Push(cpuTemp);
+        if (cpuTemp is not null) d.Stat("Temperatura").Value = N(cpuTemp, "°C");
+        if (V(d.Id, "power") is { } power) d.Stat("Consumo").Value = N(power, "W");
+        if (V(d.Id, "clock_max") is { } clockMax) d.Stat("Núcleo mais rápido").Value = N(clockMax, "MHz");
         if (detail is null) return;
 
         var cpu = detail.Cpu;
@@ -384,6 +577,7 @@ public sealed class PerformanceViewModel : ObservableObject
         var read = V(d.Id, "read");
         var write = V(d.Id, "write");
         d.Main.Push(active);
+        d.Overlay.Push(V(d.Id, "temp"));
         d.Rate!.Push(read);
         d.Rate2!.Push(write);
         var top = Math.Max(d.Rate.Max, d.Rate2.Max);
@@ -427,7 +621,12 @@ public sealed class PerformanceViewModel : ObservableObject
         d.Main.Push(usage);
         d.Subtitle = $"{N(usage, "%")}" + (temp is { } t ? $"  ({N(t, "°C")})" : "");
         d.Stat("Utilização").Value = N(usage, "%");
+        d.Overlay.Push(temp);
         if (temp is not null) d.Stat("Temperatura").Value = N(temp, "°C");
+        if (V(d.Id, "temp_hotspot") is { } hot) d.Stat("Hot spot").Value = N(hot, "°C");
+        if (V(d.Id, "clock") is { } gclock) d.Stat("Velocidade").Value = N(gclock, "MHz");
+        if (V(d.Id, "power") is { } gpower) d.Stat("Consumo").Value = N(gpower, "W");
+        if (V(d.Id, "fan") is { } rpm) d.Stat("Ventoinha").Value = N(rpm, "RPM") + (V(d.Id, "fan_duty") is { } duty ? $" ({N(duty, "%")})" : "");
 
         var gpu = detail?.Gpus.FirstOrDefault(x => x.Id == d.Id);
         if (gpu is null)

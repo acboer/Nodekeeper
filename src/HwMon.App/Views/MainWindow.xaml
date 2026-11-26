@@ -1496,8 +1496,26 @@
                             <ColumnDefinition Width="250"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.ColumnSpan="2" Text="{Binding DetailHint}" Style="{StaticResource Caption}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"
-                                   Visibility="{Binding DetailHint, Converter={StaticResource NullToVisibility}}"/>
+                        <StackPanel Grid.ColumnSpan="2" Margin="0,0,0,12">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Janela" Style="{StaticResource Caption}" FontSize="12" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <Border Padding="3" CornerRadius="10" Background="{DynamicResource Card.Inset}" BorderBrush="{DynamicResource Card.Border}" BorderThickness="1">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Content="60 s" Style="{StaticResource TabToggle}" GroupName="PerfRange" IsChecked="{Binding Range60}"/>
+                                        <RadioButton Content="10 min" Style="{StaticResource TabToggle}" GroupName="PerfRange" IsChecked="{Binding Range10m}"/>
+                                        <RadioButton Content="1 h" Style="{StaticResource TabToggle}" GroupName="PerfRange" IsChecked="{Binding Range1h}"/>
+                                        <RadioButton Content="24 h" Style="{StaticResource TabToggle}" GroupName="PerfRange" IsChecked="{Binding Range24h}"/>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Text="Acima de 60 s, os gráficos vêm do histórico do serviço; núcleos e motores da GPU só ao vivo." Style="{StaticResource Caption}"
+                                           FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap" Margin="14,0,0,0" MaxWidth="460"
+                                           Visibility="{Binding Range60, Converter={StaticResource BoolToCollapsed}}"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding HistoryError}" Style="{StaticResource Caption}" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0"
+                                       Visibility="{Binding HistoryError, Converter={StaticResource NullToVisibility}}"/>
+                            <TextBlock Text="{Binding DetailHint}" Style="{StaticResource Caption}" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0"
+                                       Visibility="{Binding DetailHint, Converter={StaticResource NullToVisibility}}"/>
+                        </StackPanel>
 
                         <!-- Lista de dispositivos -->
                         <ListBox Grid.Row="1" ItemsSource="{Binding Devices}" SelectedItem="{Binding Selected}" Background="Transparent" BorderThickness="0"
@@ -1557,7 +1575,8 @@
                                 </Grid>
 
                                 <!-- CPU: gráfico geral ou um por processador lógico -->
-                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0" Visibility="{Binding IsCpu, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0" Visibility="{Binding IsCpu, Converter={StaticResource BoolToVisibility}}"
+                                            IsEnabled="{Binding Live}">
                                     <RadioButton Content="Geral" FontSize="12" GroupName="PerfCpuView" IsChecked="{Binding Overall}" Margin="0,0,16,0"/>
                                     <RadioButton Content="Um gráfico por núcleo" FontSize="12" GroupName="PerfCpuView" IsChecked="{Binding PerCore}"/>
                                 </StackPanel>
@@ -1565,15 +1584,20 @@
                                 <StackPanel Visibility="{Binding ShowMain, Converter={StaticResource BoolToVisibility}}">
                                     <Grid Margin="0,12,0,4">
                                         <TextBlock Text="{Binding ChartTitle}" Style="{StaticResource Caption}" FontSize="12"/>
-                                        <TextBlock Text="{Binding ScaleText}" Style="{StaticResource Caption}" FontSize="12" HorizontalAlignment="Right"/>
+                                        <TextBlock Text="{Binding ChartScaleText}" Style="{StaticResource Caption}" FontSize="12" HorizontalAlignment="Right"/>
                                     </Grid>
-                                    <controls:PerfChart Style="{StaticResource PerfChartStyle}" Height="260"
-                                                        Values="{Binding Values}" Values2="{Binding Values2}" Maximum="{Binding Maximum}"/>
+                                    <controls:PerfChart Style="{StaticResource PerfChartStyle}" Height="260" Capacity="{Binding ChartCapacity}"
+                                                        Values="{Binding ChartValues}" Values2="{Binding ChartValues2}" Maximum="{Binding ChartMaximum}"
+                                                        Values3="{Binding ChartOverlay}" Maximum3="{Binding OverlayMaximum}" Stroke3="{DynamicResource Status.Caution}"/>
                                     <Grid Margin="0,4,0,0">
-                                        <TextBlock Text="60 segundos" Style="{StaticResource Caption}" FontSize="11"/>
+                                        <TextBlock Text="{Binding RangeLabel}" Style="{StaticResource Caption}" FontSize="11"/>
                                         <TextBlock Text="0" Style="{StaticResource Caption}" FontSize="11" HorizontalAlignment="Right"/>
                                     </Grid>
                                 </StackPanel>
+                                <TextBlock Style="{StaticResource Caption}" FontSize="11" Margin="0,2,0,0"
+                                           Visibility="{Binding HasOverlay, Converter={StaticResource BoolToVisibility}}">
+                                    <Run Text="━ " Foreground="{DynamicResource Status.Caution}"/><Run Text="{controls:T 'Temperatura (escala de 0 a 100 °C)'}"/>
+                                </TextBlock>
                                 <TextBlock Text="Linha cheia: recebimento · tracejada: envio" Style="{StaticResource Caption}" FontSize="11" Margin="0,2,0,0"
                                            Visibility="{Binding IsNet, Converter={StaticResource BoolToVisibility}}"/>
 
@@ -1581,10 +1605,10 @@
                                 <StackPanel Visibility="{Binding IsDisk, Converter={StaticResource BoolToVisibility}}">
                                     <Grid Margin="0,12,0,4">
                                         <TextBlock Text="{Binding Chart2Title}" Style="{StaticResource Caption}" FontSize="12"/>
-                                        <TextBlock Text="{Binding Scale2Text}" Style="{StaticResource Caption}" FontSize="12" HorizontalAlignment="Right"/>
+                                        <TextBlock Text="{Binding ChartScale2Text}" Style="{StaticResource Caption}" FontSize="12" HorizontalAlignment="Right"/>
                                     </Grid>
                                     <controls:PerfChart Style="{StaticResource PerfChartStyle}" Height="110" GridLines="4"
-                                                        Values="{Binding RateValues}" Values2="{Binding RateValues2}" Maximum="{Binding Maximum2}"/>
+                                                        Capacity="{Binding ChartCapacity}" Values="{Binding ChartRate}" Values2="{Binding ChartRate2}" Maximum="{Binding ChartMaximum2}"/>
                                     <TextBlock Text="Linha cheia: leitura · tracejada: gravação" Style="{StaticResource Caption}" FontSize="11" Margin="0,4,0,0"/>
                                 </StackPanel>
 

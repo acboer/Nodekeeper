@@ -20,6 +20,15 @@ public sealed class PerfChart : FrameworkElement
     /// <summary>Linhas da grade: 0 = sem grade (gráficos pequenos por núcleo só com a moldura).</summary>
     public static readonly DependencyProperty GridLinesProperty = DependencyProperty.Register(nameof(GridLines), typeof(int), typeof(PerfChart), Render(10));
 
+    /// <summary>Sensor sobreposto (temperatura): linha fina na cor de <see cref="Stroke3"/>, com escala própria.</summary>
+    public static readonly DependencyProperty Values3Property = DependencyProperty.Register(nameof(Values3), typeof(IReadOnlyList<double>), typeof(PerfChart), Render(null!));
+    public static readonly DependencyProperty Maximum3Property = DependencyProperty.Register(nameof(Maximum3), typeof(double), typeof(PerfChart), Render(100.0));
+    public static readonly DependencyProperty Stroke3Property = DependencyProperty.Register(nameof(Stroke3), typeof(Brush), typeof(PerfChart), Render(Brushes.Orange));
+
+    public IReadOnlyList<double>? Values3 { get => (IReadOnlyList<double>?)GetValue(Values3Property); set => SetValue(Values3Property, value); }
+    public double Maximum3 { get => (double)GetValue(Maximum3Property); set => SetValue(Maximum3Property, value); }
+    public Brush Stroke3 { get => (Brush)GetValue(Stroke3Property); set => SetValue(Stroke3Property, value); }
+
     public IReadOnlyList<double> Values { get => (IReadOnlyList<double>)GetValue(ValuesProperty); set => SetValue(ValuesProperty, value); }
     public IReadOnlyList<double>? Values2 { get => (IReadOnlyList<double>?)GetValue(Values2Property); set => SetValue(Values2Property, value); }
     public double Maximum { get => (double)GetValue(MaximumProperty); set => SetValue(MaximumProperty, value); }
@@ -58,21 +67,22 @@ public sealed class PerfChart : FrameworkElement
         }
 
         dc.PushClip(new RectangleGeometry(rect));
-        Draw(dc, Values2, color, w, h, dashed: true);
-        Draw(dc, Values, color, w, h, dashed: false);
+        Draw(dc, Values2, color, w, h, Maximum, dashed: true);
+        Draw(dc, Values, color, w, h, Maximum, dashed: false);
+        if ((Stroke3 as SolidColorBrush)?.Color is { } c3) Draw(dc, Values3, c3, w, h, Maximum3, dashed: false, filled: false);
         dc.Pop();
         dc.DrawRectangle(null, frame, rect);
     }
 
-    private void Draw(DrawingContext dc, IReadOnlyList<double>? values, Color color, double w, double h, bool dashed)
+    private void Draw(DrawingContext dc, IReadOnlyList<double>? values, Color color, double w, double h, double maximum, bool dashed, bool filled = true)
     {
         if (values is not { Count: > 1 }) return;
-        var max = Maximum > 0 ? Maximum : 1;
+        var max = maximum > 0 ? maximum : 1;
         var step = w / Math.Max(1, Capacity - 1);
         var start = w - (values.Count - 1) * step;
         Point P(int i) => new(start + i * step, h - Math.Clamp(values[i] / max, 0, 1) * (h - 2) - 1);
 
-        if (!dashed)
+        if (!dashed && filled)
         {
             var area = new StreamGeometry();
             using (var g = area.Open())
