@@ -138,7 +138,7 @@ public sealed class AlertService(EngineHost host, DataStore store, ILogger<Alert
     }
 
     /// <summary>Campos nulos ficam como estão; vazio apaga; "•••" (o valor mascarado devolvido) mantém o segredo.</summary>
-    public string? SetChannels(AlertChannels update)
+    public async Task<string?> SetChannelsAsync(AlertChannels update)
     {
         if (Invalid(update.NtfyUrl) || Invalid(update.DiscordWebhook)) return "URL inválida (use https://...).";
         lock (_lock)
@@ -151,6 +151,7 @@ public sealed class AlertService(EngineHost host, DataStore store, ILogger<Alert
             c.NotifyResolved = update.NotifyResolved;
             SaveSettings();
         }
+        await FindTelegramChatAsync();
         return null;
 
         static string? Merge(string? current, string? incoming) => incoming switch
@@ -174,6 +175,7 @@ public sealed class AlertService(EngineHost host, DataStore store, ILogger<Alert
 
     public async Task<List<AlertTestResult>> TestAsync(string machine)
     {
+        await FindTelegramChatAsync();
         AlertChannels c;
         lock (_lock) c = _settings.Channels;
         var title = "Nodekeeper";
@@ -216,8 +218,8 @@ public sealed class AlertService(EngineHost host, DataStore store, ILogger<Alert
     {
         if (!string.IsNullOrWhiteSpace(c.NtfyUrl)) yield return ("ntfy", (t, b) => Ntfy(c.NtfyUrl!, t, b));
         if (!string.IsNullOrWhiteSpace(c.DiscordWebhook)) yield return ("Discord", (t, b) => Discord(c.DiscordWebhook!, t, b));
-        if (!string.IsNullOrWhiteSpace(c.TelegramToken) && !string.IsNullOrWhiteSpace(c.TelegramChatId))
-            yield return ("Telegram", (t, b) => Telegram(c.TelegramToken!, c.TelegramChatId!, t, b));
+        if (!string.IsNullOrWhiteSpace(c.TelegramToken))
+            yield return ("Telegram", (t, b) => Telegram(c.TelegramToken!, c.TelegramChatId, t, b));
     }
 
     private static async Task Ntfy(string url, string title, string body)
@@ -232,6 +234,48 @@ public sealed class AlertService(EngineHost host, DataStore store, ILogger<Alert
     private static async Task Discord(string webhook, string title, string body)
         => (await Http.PostAsJsonAsync(webhook, new { content = $"**{title}**\n{body}" })).EnsureSuccessStatusCode();
 
-    private static async Task Telegram(string token, string chatId, string title, string body)
-        => (await Http.PostAsJsonAsync($"https://api.telegram.org/bot{token}/sendMessage", new { chat_id = chatId, text = $"{title}\n{body}" })).EnsureSuccessStatusCode();
+    private static async Task Telegram(string token, string? chatId, string title, string body)
+    {
+        if (string.IsNullOrWhiteSpace(chatId)) throw new InvalidOperationException(TelegramNoChat);
+        (await Http.PostAsJsonAsync($"https://api.telegram.org/bot{token}/sendMessage", new { chat_id = chatId, text = $"{title}\n{body}" })).EnsureSuccessStatusCode();
+    }
+
+    private const string TelegramNoChat = "abra o bot no Telegram, toque em Iniciar (/start), mande uma mensagem e teste de novo";
+
+    /// <summary>
+    /// Com o token e sem o ID do chat, pergunta ao Telegram (getUpdates) quem escreveu ao bot por último: é o chat de
+    /// quem tocou em Iniciar. Assim basta colar o token. Só lê as mensagens enviadas ao próprio bot.
+    /// </summary>
+    private async Task FindTelegramChatAsync()
+    {
+        string? token;
+        lock (_lock)
+        {
+            var c = _settings.Channels;
+            if (string.IsNullOrWhiteSpace(c.TelegramToken) || !string.IsNullOrWhiteSpace(c.TelegramChatId)) return;
+            token = c.TelegramToken;
+        }
+        try
+        {
+            using var doc = JsonDocument.Parse(await Http.GetStringAsync($"https://api.telegram.org/bot{token}/getUpdates"));
+            string? chat = null;
+            if (doc.RootElement.TryGetProperty("result", out var updates) && updates.ValueKind == JsonValueKind.Array)
+                foreach (var u in updates.EnumerateArray())
+                    foreach (var kind in new[] { "message", "my_chat_member", "channel_post" })
+                        if (u.TryGetProperty(kind, out var m) && m.TryGetProperty("chat", out var ch) && ch.TryGetProperty("id", out var id))
+                            chat = id.GetRawText();
+            if (chat is null) return;
+            lock (_lock)
+            {
+                if (_settings.Channels.TelegramToken != token) return;
+                _settings.Channels.TelegramChatId = chat;
+                SaveSettings();
+            }
+            log.LogInformation("Alertas: chat do Telegram encontrado ({Chat})", chat);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            log.LogWarning("Alertas: não foi possível achar o chat do Telegram: {Error}", ex.Message);
+        }
+    }
 }

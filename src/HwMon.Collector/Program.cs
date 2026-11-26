@@ -287,10 +287,10 @@ static async Task<int> RunAsync(string[] args, string? dataDir)
         log.LogInformation("Alertas: regras alteradas por {Client}", ClientName(clients, http));
         return Results.Ok(alerts.Get());
     });
-    api.MapPut("/alerts/channels", (HwMon.Core.Alerts.AlertChannels? channels, AlertService alerts, ClientRegistry clients, HttpContext http) =>
+    api.MapPut("/alerts/channels", async (HwMon.Core.Alerts.AlertChannels? channels, AlertService alerts, ClientRegistry clients, HttpContext http) =>
     {
         if (channels is null) return Results.BadRequest();
-        if (alerts.SetChannels(channels) is { } error) return Results.BadRequest(error);
+        if (await alerts.SetChannelsAsync(channels) is { } error) return Results.BadRequest(error);
         log.LogInformation("Alertas: canais alterados por {Client}", ClientName(clients, http));
         return Results.Ok(alerts.Get());
     });

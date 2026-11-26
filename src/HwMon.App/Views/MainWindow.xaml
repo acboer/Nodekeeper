@@ -1073,10 +1073,10 @@
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                                     <StackPanel Orientation="Horizontal" Visibility="{Binding HasThreshold, Converter={StaticResource BoolToVisibility}}">
                                                         <TextBlock Text="{Binding Comparison}" Style="{StaticResource Caption}" FontSize="13" VerticalAlignment="Center"/>
-                                                        <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Width="64" Margin="8,0,6,0" FontSize="13"/>
+                                                        <TextBox Text="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource NumberBox}" Margin="8,0,6,0"/>
                                                         <TextBlock Text="{Binding Unit}" Style="{StaticResource Caption}" FontSize="13" VerticalAlignment="Center"/>
                                                         <TextBlock Text="por" Style="{StaticResource Caption}" FontSize="13" VerticalAlignment="Center" Margin="12,0,0,0"/>
-                                                        <TextBox Text="{Binding Minutes, UpdateSourceTrigger=PropertyChanged}" Width="52" Margin="8,0,6,0" FontSize="13"/>
+                                                        <TextBox Text="{Binding Minutes, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource NumberBox}" Margin="8,0,6,0"/>
                                                         <TextBlock Text="min" Style="{StaticResource Caption}" FontSize="13" VerticalAlignment="Center"/>
                                                     </StackPanel>
                                                     <TextBlock Text="{Binding Description}" Style="{StaticResource Caption}" FontSize="12" VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap" MaxWidth="420"/>
@@ -1100,6 +1100,7 @@
                                         <RowDefinition/>
                                         <RowDefinition/>
                                         <RowDefinition/>
+                                        <RowDefinition/>
                                     </Grid.RowDefinitions>
                                     <TextBlock Text="ntfy (URL do tópico)" Style="{StaticResource Text.Label}" VerticalAlignment="Center"/>
                                     <TextBox Grid.Column="1" Text="{Binding NtfyUrl, UpdateSourceTrigger=PropertyChanged}" Margin="0,4" FontSize="13" ToolTip="Ex.: https://ntfy.sh/meu-nas-1234 (instale o app ntfy no celular e assine o mesmo tópico)"/>
@@ -1109,6 +1110,8 @@
                                     <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding TelegramToken, UpdateSourceTrigger=PropertyChanged}" Margin="0,4" FontSize="13" ToolTip="Crie um bot com o @BotFather"/>
                                     <TextBlock Grid.Row="3" Text="Telegram (ID do chat)" Style="{StaticResource Text.Label}" VerticalAlignment="Center"/>
                                     <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding TelegramChatId, UpdateSourceTrigger=PropertyChanged}" Margin="0,4" FontSize="13"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource Caption}" FontSize="12" TextWrapping="Wrap" Margin="0,2,0,0"
+                                               Text="No Telegram, o alerta chega como mensagem do seu bot. Cole o token, abra o bot no Telegram, toque em Iniciar e salve: o ID do chat é preenchido sozinho."/>
                                 </Grid>
                                 <CheckBox Content="Avisar também quando o problema passar" IsChecked="{Binding NotifyResolved}" Margin="0,10,0,0" FontSize="13"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,14,0,0">

@@ -318,7 +318,7 @@ public sealed class AlertsViewModel : ObservableObject
         var results = await client.TestAlertsAsync();
         Status = results.Count == 0
             ? L.T("Nenhum canal configurado. Preencha e salve um canal antes de testar.")
-            : string.Join(" · ", results.Select(r => r.Ok ? $"{r.Channel}: {L.T("enviado")}" : $"{r.Channel}: {L.T("falhou")} ({r.Error})"));
+            : string.Join(" · ", results.Select(r => r.Ok ? $"{r.Channel}: {L.T("enviado")}" : $"{r.Channel}: {L.T("falhou")} ({L.T(r.Error ?? "")})"));
     });
 
     private Task ClearHistoryAsync() => Run(async client =>

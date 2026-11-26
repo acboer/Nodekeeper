@@ -507,6 +507,8 @@
   "Economia de energia": "Power saver",
   "Desempenho máximo": "Ultimate performance",
   "Personalizado": "Custom",
+  "No Telegram, o alerta chega como mensagem do seu bot. Cole o token, abra o bot no Telegram, toque em Iniciar e salve: o ID do chat é preenchido sozinho.": "On Telegram, the alert arrives as a message from your bot. Paste the token, open the bot in Telegram, tap Start and save: the chat ID is filled in automatically.",
+  "abra o bot no Telegram, toque em Iniciar (/start), mande uma mensagem e teste de novo": "open the bot in Telegram, tap Start (/start), send it a message and test again",
   "Temperatura da CPU": "CPU temperature",
   "Temperatura da placa de vídeo": "Graphics card temperature",
   "Saúde do disco": "Disk health",
