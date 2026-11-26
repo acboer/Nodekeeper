@@ -392,6 +392,18 @@
         </Setter>
     </Style>
 
+    <!-- Aba Desempenho: cor do gráfico pelo tipo de dispositivo (DataContext com a propriedade Kind). -->
+    <Style x:Key="PerfChartStyle" TargetType="controls:PerfChart">
+        <Setter Property="Stroke" Value="{DynamicResource Perf.Cpu}"/>
+        <Setter Property="GridBrush" Value="{DynamicResource Perf.Grid}"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding Kind}" Value="memory"><Setter Property="Stroke" Value="{DynamicResource Perf.Memory}"/></DataTrigger>
+            <DataTrigger Binding="{Binding Kind}" Value="disk"><Setter Property="Stroke" Value="{DynamicResource Perf.Disk}"/></DataTrigger>
+            <DataTrigger Binding="{Binding Kind}" Value="net"><Setter Property="Stroke" Value="{DynamicResource Perf.Net}"/></DataTrigger>
+            <DataTrigger Binding="{Binding Kind}" Value="gpu"><Setter Property="Stroke" Value="{DynamicResource Perf.Gpu}"/></DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- Botão de alternância (Personalizar). -->
     <Style x:Key="FlatToggle" TargetType="ToggleButton">
         <Setter Property="FontFamily" Value="{StaticResource Font.Text}"/>

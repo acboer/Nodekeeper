@@ -1241,12 +1241,13 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- Abas: Painel (ao vivo) e Sistema (resumo estilo CPU-Z) -->
+                    <!-- Abas: Painel (ao vivo), Desempenho (gráficos de 60 s), Sistema (resumo estilo CPU-Z) e Benchmarks -->
                     <Border Margin="0,18,0,0" Padding="3" CornerRadius="10" HorizontalAlignment="Left"
                             Background="{DynamicResource Card.Inset}" BorderBrush="{DynamicResource Card.Border}" BorderThickness="1"
                             Visibility="{Binding IsHistoryOpen, Converter={StaticResource BoolToCollapsed}}">
                         <StackPanel Orientation="Horizontal">
                             <RadioButton Content="Painel" Tag="nav-overview" Style="{StaticResource TabToggle}" IsChecked="{Binding ShowPanel}"/>
+                            <RadioButton Content="Desempenho" Tag="kind-cpu" Style="{StaticResource TabToggle}" IsChecked="{Binding ShowPerformance}"/>
                             <RadioButton Content="Sistema" Tag="action-metrics" Style="{StaticResource TabToggle}" IsChecked="{Binding ShowSystem}"/>
                             <RadioButton Content="Benchmarks" Tag="metric-usage" Style="{StaticResource TabToggle}" IsChecked="{Binding ShowBench}"/>
                         </StackPanel>
@@ -1483,6 +1484,182 @@
                             </StackPanel>
                         </Border>
                     </StackPanel>
+
+                    <!-- Aba Desempenho (como a do Gerenciador de Tarefas): lista à esquerda, gráficos de 60 s à direita -->
+                    <Grid DataContext="{Binding Performance}" Margin="0,16,0,0"
+                          Visibility="{Binding DataContext.PerformanceVisible, RelativeSource={RelativeSource AncestorType=ScrollViewer}, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="250"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.ColumnSpan="2" Text="{Binding DetailHint}" Style="{StaticResource Caption}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"
+                                   Visibility="{Binding DetailHint, Converter={StaticResource NullToVisibility}}"/>
+
+                        <!-- Lista de dispositivos -->
+                        <ListBox Grid.Row="1" ItemsSource="{Binding Devices}" SelectedItem="{Binding Selected}" Background="Transparent" BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" VerticalAlignment="Top" Margin="0,0,14,0">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border x:Name="Bg" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="8" Padding="8" Margin="0,0,0,4">
+                                                    <ContentPresenter/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Card.BackgroundHover}"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Card.Background}"/>
+                                                        <Setter TargetName="Bg" Property="BorderBrush" Value="{DynamicResource Card.Border}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="72"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <controls:PerfChart Style="{StaticResource PerfChartStyle}" Height="46" GridLines="0" Values="{Binding Values}" Values2="{Binding Values2}" Maximum="{Binding Maximum}"/>
+                                        <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Model}" Style="{StaticResource Caption}" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Caption}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- Detalhe do dispositivo escolhido -->
+                        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}" Padding="20,16" VerticalAlignment="Top">
+                            <StackPanel DataContext="{Binding Selected}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Model}" FontSize="14" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                               TextTrimming="CharacterEllipsis" Margin="16,0,0,4"/>
+                                </Grid>
+
+                                <!-- CPU: gráfico geral ou um por processador lógico -->
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0" Visibility="{Binding IsCpu, Converter={StaticResource BoolToVisibility}}">
+                                    <RadioButton Content="Geral" FontSize="12" GroupName="PerfCpuView" IsChecked="{Binding Overall}" Margin="0,0,16,0"/>
+                                    <RadioButton Content="Um gráfico por núcleo" FontSize="12" GroupName="PerfCpuView" IsChecked="{Binding PerCore}"/>
+                                </StackPanel>
+
+                                <StackPanel Visibility="{Binding ShowMain, Converter={StaticResource BoolToVisibility}}">
+                                    <Grid Margin="0,12,0,4">
+                                        <TextBlock Text="{Binding ChartTitle}" Style="{StaticResource Caption}" FontSize="12"/>
+                                        <TextBlock Text="{Binding ScaleText}" Style="{StaticResource Caption}" FontSize="12" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                    <controls:PerfChart Style="{StaticResource PerfChartStyle}" Height="260"
+                                                        Values="{Binding Values}" Values2="{Binding Values2}" Maximum="{Binding Maximum}"/>
+                                    <Grid Margin="0,4,0,0">
+                                        <TextBlock Text="60 segundos" Style="{StaticResource Caption}" FontSize="11"/>
+                                        <TextBlock Text="0" Style="{StaticResource Caption}" FontSize="11" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Text="Linha cheia: recebimento · tracejada: envio" Style="{StaticResource Caption}" FontSize="11" Margin="0,2,0,0"
+                                           Visibility="{Binding IsNet, Converter={StaticResource BoolToVisibility}}"/>
+
+                                <!-- Disco: taxa de transferência (leitura cheia, gravação tracejada) -->
+                                <StackPanel Visibility="{Binding IsDisk, Converter={StaticResource BoolToVisibility}}">
+                                    <Grid Margin="0,12,0,4">
+                                        <TextBlock Text="{Binding Chart2Title}" Style="{StaticResource Caption}" FontSize="12"/>
+                                        <TextBlock Text="{Binding Scale2Text}" Style="{StaticResource Caption}" FontSize="12" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                    <controls:PerfChart Style="{StaticResource PerfChartStyle}" Height="110" GridLines="4"
+                                                        Values="{Binding RateValues}" Values2="{Binding RateValues2}" Maximum="{Binding Maximum2}"/>
+                                    <TextBlock Text="Linha cheia: leitura · tracejada: gravação" Style="{StaticResource Caption}" FontSize="11" Margin="0,4,0,0"/>
+                                </StackPanel>
+
+                                <!-- Memória: composição -->
+                                <StackPanel Margin="0,14,0,0" Visibility="{Binding HasSegments, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="Composição da memória" Style="{StaticResource Caption}" FontSize="12" Margin="0,0,0,4"/>
+                                    <Border Height="34" BorderBrush="{DynamicResource Perf.Memory}" BorderThickness="1">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="{Binding Segments[0].Width}"/>
+                                                <ColumnDefinition Width="{Binding Segments[1].Width}"/>
+                                                <ColumnDefinition Width="{Binding Segments[2].Width}"/>
+                                                <ColumnDefinition Width="{Binding Segments[3].Width}"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Background="{DynamicResource Perf.Memory}" Opacity="{Binding Segments[0].Opacity}"/>
+                                            <Border Grid.Column="1" Background="{DynamicResource Perf.Memory}" Opacity="{Binding Segments[1].Opacity}"/>
+                                            <Border Grid.Column="2" Background="{DynamicResource Perf.Memory}" Opacity="{Binding Segments[2].Opacity}"/>
+                                            <Border Grid.Column="1" BorderBrush="{DynamicResource Perf.Memory}" BorderThickness="1,0,0,0"/>
+                                            <Border Grid.Column="2" BorderBrush="{DynamicResource Perf.Memory}" BorderThickness="1,0,0,0"/>
+                                            <Border Grid.Column="3" BorderBrush="{DynamicResource Perf.Memory}" BorderThickness="1,0,0,0"/>
+                                        </Grid>
+                                    </Border>
+                                    <ItemsControl ItemsSource="{Binding Segments}" Margin="0,6,0,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Style="{StaticResource Caption}" FontSize="12" Margin="0,0,18,0">
+                                                    <Run Text="{Binding Label, Mode=OneWay}"/><Run Text=": "/><Run Text="{Binding Value, Mode=OneWay}"/>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+
+                                <!-- GPU: motores e memória; CPU: um gráfico por processador lógico -->
+                                <ItemsControl ItemsSource="{Binding Minis}" Margin="0,10,0,0"
+                                              Visibility="{Binding ShowMinis, Converter={StaticResource BoolToVisibility}}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="{Binding MiniColumns}"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,4,8,4">
+                                                <Grid Margin="0,0,0,2">
+                                                    <TextBlock Text="{Binding Title}" Style="{StaticResource Caption}" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding ValueText}" Style="{StaticResource Caption}" FontSize="11" HorizontalAlignment="Right"/>
+                                                </Grid>
+                                                <controls:PerfChart Style="{StaticResource PerfChartStyle}" Height="80" GridLines="4"
+                                                                    Values="{Binding Values}" Maximum="{Binding Maximum}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- Números -->
+                                <ItemsControl ItemsSource="{Binding Stats}" Margin="0,14,0,0">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,0,30,12" MinWidth="110">
+                                                <TextBlock Text="{Binding Label}" Style="{StaticResource Caption}" FontSize="12"/>
+                                                <TextBlock Text="{Binding Value}" FontSize="17" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
 
                     <!-- Aba Benchmarks -->
                     <StackPanel DataContext="{Binding Benchmarks}" Margin="0,16,0,0"

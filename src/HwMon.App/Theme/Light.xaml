@@ -55,6 +55,14 @@
     <SolidColorBrush x:Key="Widget.BarTrack" Color="#14000000"/>
     <SolidColorBrush x:Key="Widget.Text.Secondary" Color="#5E5869"/>
 
+    <!-- Aba Desempenho: uma cor por tipo de dispositivo -->
+    <SolidColorBrush x:Key="Perf.Cpu" Color="#5B47D6"/>
+    <SolidColorBrush x:Key="Perf.Memory" Color="#B0388F"/>
+    <SolidColorBrush x:Key="Perf.Disk" Color="#1F8A57"/>
+    <SolidColorBrush x:Key="Perf.Net" Color="#B86A10"/>
+    <SolidColorBrush x:Key="Perf.Gpu" Color="#2A72C0"/>
+    <SolidColorBrush x:Key="Perf.Grid" Color="#183C2878"/>
+
     <!-- Fundo em gradiente: empilhe App.Background + App.Glow1..3 (ver LEIA-ME) -->
     <RadialGradientBrush x:Key="App.Glow1" Center="0.08,0" GradientOrigin="0.08,0" RadiusX="0.833" RadiusY="0.814"><GradientStop Color="#4D8C6EFF" Offset="0"/><GradientStop Color="#008C6EFF" Offset="0.6"/></RadialGradientBrush>  <!-- lavanda -->
     <RadialGradientBrush x:Key="App.Glow2" Center="1,1" GradientOrigin="1,1" RadiusX="0.682" RadiusY="0.814"><GradientStop Color="#52FF8CB9" Offset="0"/><GradientStop Color="#00FF8CB9" Offset="0.6"/></RadialGradientBrush>  <!-- rosa -->

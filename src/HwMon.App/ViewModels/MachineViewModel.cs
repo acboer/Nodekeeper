@@ -43,8 +43,23 @@ public sealed class MachineViewModel : ObservableObject
     /// <summary>Página da máquina aberta ou fechada: liga/desliga a consulta de processos.</summary>
     public void SetActive(bool active)
     {
+        _active = active;
         if (active && ShowProcesses) Processes.Start();
         else Processes.Stop();
+        UpdatePerformanceTimer();
+    }
+
+    private bool _active;
+
+    /// <summary>Aba "Desempenho" (gráficos de 60 s, como o Gerenciador de Tarefas).</summary>
+    public PerformanceViewModel Performance => _performance ??= new PerformanceViewModel(this);
+    private PerformanceViewModel? _performance;
+
+    /// <summary>A aba Desempenho só consulta o serviço quando está visível.</summary>
+    private void UpdatePerformanceTimer()
+    {
+        if (_active && PerformanceVisible) Performance.Start();
+        else _performance?.Stop();
     }
 
     /// <summary>Mostrar o cartão de processos (desmarcável no modo Personalizar).</summary>
@@ -63,7 +78,7 @@ public sealed class MachineViewModel : ObservableObject
     /// <summary>Aba "Sistema" (resumo estilo CPU-Z).</summary>
     public SystemPageViewModel SystemPage { get; }
 
-    /// <summary>Aba ativa da página da máquina: 0 Painel, 1 Sistema, 2 Benchmarks.</summary>
+    /// <summary>Aba ativa da página da máquina: 0 Painel, 1 Sistema, 2 Benchmarks, 3 Desempenho.</summary>
     private int _tab;
 
     private void SetTab(int tab)
@@ -76,6 +91,9 @@ public sealed class MachineViewModel : ObservableObject
         Raise(nameof(PanelVisible));
         Raise(nameof(SystemVisible));
         Raise(nameof(BenchVisible));
+        Raise(nameof(ShowPerformance));
+        Raise(nameof(PerformanceVisible));
+        UpdatePerformanceTimer();
         if (tab == 1) SystemPage.EnsureLoaded();
         if (tab == 2) Benchmarks.EnsureLoaded();
     }
@@ -83,6 +101,7 @@ public sealed class MachineViewModel : ObservableObject
     public bool ShowPanel { get => _tab == 0; set { if (value) SetTab(0); } }
     public bool ShowSystem { get => _tab == 1; set { if (value) SetTab(1); } }
     public bool ShowBench { get => _tab == 2; set { if (value) SetTab(2); } }
+    public bool ShowPerformance { get => _tab == 3; set { if (value) SetTab(3); } }
 
     /// <summary>Aba "Benchmarks" (disco e rede).</summary>
     public BenchmarkPageViewModel Benchmarks => _benchmarks ??= new BenchmarkPageViewModel(this);
@@ -104,6 +123,8 @@ public sealed class MachineViewModel : ObservableObject
             Raise(nameof(PanelVisible));
             Raise(nameof(SystemVisible));
             Raise(nameof(BenchVisible));
+            Raise(nameof(PerformanceVisible));
+            UpdatePerformanceTimer();
         }
     }
 
@@ -111,6 +132,7 @@ public sealed class MachineViewModel : ObservableObject
     public bool PanelVisible => _tab == 0 && _historyPage is null;
     public bool SystemVisible => _tab == 1 && _historyPage is null;
     public bool BenchVisible => _tab == 2 && _historyPage is null;
+    public bool PerformanceVisible => _tab == 3 && _historyPage is null;
 
     public void OpenHistory(CardViewModel card) => HistoryPage = new HistoryViewModel(this, card);
     public void CloseHistory() => HistoryPage = null;

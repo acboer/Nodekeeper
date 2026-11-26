@@ -12,7 +12,7 @@ namespace HwMon.Core.Collection;
 public sealed partial class PerfCounterCollector
 {
     private const string Source = "perf";
-    private static readonly string[] Categories = ["Processor Information", "PhysicalDisk", "GPU Engine", "GPU Adapter Memory"];
+    private static readonly string[] Categories = ["Processor Information", "PhysicalDisk", "GPU Engine", "GPU Adapter Memory", "Memory"];
 
     private Dictionary<string, CategorySnapshot>? _previous;
     private readonly Dictionary<string, int> _gpuIndexByLuid;
@@ -38,6 +38,7 @@ public sealed partial class PerfCounterCollector
         foreach (var r in Cpu(previous, current)) yield return r;
         foreach (var r in Disks(previous, current)) yield return r;
         foreach (var r in Gpus(previous, current)) yield return r;
+        Detail = BuildDetail(previous, current);
     }
 
     private Dictionary<string, CategorySnapshot> Snapshot()
@@ -151,6 +152,8 @@ public sealed partial class PerfCounterCollector
         Gpu3dByProcess = byPid;
 
         // Uma GPU pode ter vários LUIDs (apelidos); junta tudo por índice.
+        var engines2 = new Dictionary<int, Dictionary<string, double>>();
+        _lastEngines = engines2;
         foreach (var group in _gpuIndexByLuid.GroupBy(kv => kv.Value))
         {
             var id = group.Key.ToString(CultureInfo.InvariantCulture);
@@ -159,6 +162,7 @@ public sealed partial class PerfCounterCollector
                 if (byLuid.TryGetValue(luid, out var t))
                     foreach (var (type, value) in t)
                         types[type] = Math.Max(types.GetValueOrDefault(type), value);
+            engines2[group.Key] = types.ToDictionary(kv => kv.Key, kv => Math.Round(Math.Clamp(kv.Value, 0, 100), 1), StringComparer.OrdinalIgnoreCase);
 
             if (engines is null)
                 yield return Reading.Unavailable("gpu", id, "usage", "%", Source, "categoria 'GPU Engine' ausente");
@@ -183,6 +187,82 @@ public sealed partial class PerfCounterCollector
                 yield return Reading.Ok("gpu", index.ToString(CultureInfo.InvariantCulture), "vram_used", gb, "GB", Source);
         }
     }
+
+    // ------------------------------------------------------------------ aba Desempenho
+
+    /// <summary>Detalhes da última amostra para a aba Desempenho (por número do disco e índice da GPU).</summary>
+    public RawPerfDetail? Detail { get; private set; }
+
+    public sealed class RawPerfDetail
+    {
+        public List<double> Cores { get; } = new();
+        public double? BaseMhz { get; set; }
+        public Dictionary<string, double> DiskResponseMs { get; } = new();
+        public Dictionary<int, Dictionary<string, double>> GpuEngines { get; } = new();
+        public Dictionary<int, double> GpuSharedGb { get; } = new();
+        public double? ModifiedBytes { get; set; }
+        public double? StandbyBytes { get; set; }
+        public double? FreeBytes { get; set; }
+    }
+
+    private RawPerfDetail BuildDetail(Dictionary<string, CategorySnapshot> prev, Dictionary<string, CategorySnapshot> cur)
+    {
+        var d = new RawPerfDetail();
+
+        // Núcleos: instâncias "grupo,número" ("0,0", "0,1"...); "_Total" e "0,_Total" são somas.
+        const string cpu = "Processor Information";
+        if (cur.TryGetValue(cpu, out var procs))
+        {
+            var cores = new List<(int Group, int Number, double Value)>();
+            foreach (var instance in procs.Keys)
+            {
+                var comma = instance.IndexOf(',');
+                if (comma <= 0
+                    || !int.TryParse(instance[..comma], NumberStyles.Integer, CultureInfo.InvariantCulture, out var group)
+                    || !int.TryParse(instance[(comma + 1)..], NumberStyles.Integer, CultureInfo.InvariantCulture, out var number)) continue;
+                if (Calc(prev, cur, cpu, instance, "% Processor Utility") is { } u) cores.Add((group, number, Math.Clamp(u, 0, 100)));
+            }
+            d.Cores.AddRange(cores.OrderBy(c => c.Group).ThenBy(c => c.Number).Select(c => Math.Round(c.Value, 1)));
+            d.BaseMhz = Calc(prev, cur, cpu, "_Total", "Processor Frequency");
+        }
+
+        // Tempo médio de resposta do disco (s → ms).
+        if (cur.TryGetValue("PhysicalDisk", out var disks))
+            foreach (var instance in disks.Keys)
+            {
+                var space = instance.IndexOf(' ');
+                var head = space > 0 ? instance[..space] : instance;
+                if (!int.TryParse(head, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number)) continue;
+                if (Calc(prev, cur, "PhysicalDisk", instance, "Avg. Disk sec/Transfer") is { } sec)
+                    d.DiskResponseMs[number.ToString(CultureInfo.InvariantCulture)] = Math.Round(sec * 1000, 2);
+            }
+
+        d.GpuEngines.Clear();
+        foreach (var (index, types) in _lastEngines) d.GpuEngines[index] = types;
+
+        if (cur.TryGetValue("GPU Adapter Memory", out var memory))
+            foreach (var (instance, counters) in memory)
+            {
+                var m = LuidRegex().Match(instance);
+                if (!m.Success || !_gpuIndexByLuid.TryGetValue(m.Groups[1].Value, out var index)) continue;
+                if (counters.TryGetValue("Shared Usage", out var shared))
+                    d.GpuSharedGb[index] = Math.Max(d.GpuSharedGb.GetValueOrDefault(index), shared.RawValue / 1_073_741_824.0);
+            }
+
+        // Composição da memória (bytes, valores instantâneos).
+        if (cur.TryGetValue("Memory", out var mem) && mem.Values.FirstOrDefault() is { } counters2)
+        {
+            double? Raw(string name) => counters2.TryGetValue(name, out var c) ? c.RawValue : null;
+            d.ModifiedBytes = Raw("Modified Page List Bytes");
+            var standby = new[] { "Standby Cache Core Bytes", "Standby Cache Normal Priority Bytes", "Standby Cache Reserve Bytes" }.Select(Raw).ToList();
+            d.StandbyBytes = standby.All(v => v is null) ? null : standby.Sum(v => v ?? 0);
+            d.FreeBytes = Raw("Free & Zero Page List Bytes");
+        }
+        return d;
+    }
+
+    /// <summary>Uso por tipo de motor de cada GPU na última amostra (preenchido em <see cref="Gpus"/>).</summary>
+    private Dictionary<int, Dictionary<string, double>> _lastEngines = new();
 
     private sealed class CategorySnapshot : Dictionary<string, Dictionary<string, CounterSample>>
     {

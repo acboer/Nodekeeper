@@ -510,6 +510,96 @@ public sealed class TelemetryEngine : IDisposable
         };
     }
 
+    /// <summary>Detalhes para a aba Desempenho do painel (/v1/perf). Usa a última amostra da coleta rápida (1 s).</summary>
+    public PerfDetail PerfDetail()
+    {
+        const double gb = 1_073_741_824.0;
+        var raw = _perf?.Detail;
+        var detail = new PerfDetail { Time = DateTimeOffset.Now, Cpu = { UptimeSeconds = Environment.TickCount64 / 1000.0 } };
+        if (raw is not null)
+        {
+            detail.Cpu.Cores = raw.Cores.ToList();
+            detail.Cpu.BaseMhz = raw.BaseMhz is { } b ? Math.Round(b) : null;
+        }
+
+        var perfInfo = Native.GetPerformance();
+        if (perfInfo is { } p)
+        {
+            detail.Cpu.Processes = (int)p.ProcessCount;
+            detail.Cpu.Threads = (int)p.ThreadCount;
+            detail.Cpu.Handles = (int)p.HandleCount;
+        }
+
+        if (Native.GetMemoryStatus() is { } ms)
+        {
+            var page = perfInfo is { } pi ? (double)pi.PageSize : 4096;
+            var total = ms.TotalPhys / gb;
+            var available = ms.AvailPhys / gb;
+            var modified = raw?.ModifiedBytes / gb;
+            var standby = raw?.StandbyBytes / gb;
+            detail.Memory = new PerfMemory
+            {
+                TotalGb = Math.Round(total, 3),
+                AvailableGb = Math.Round(available, 3),
+                // Como no Gerenciador de Tarefas: "em uso" não conta a lista modificada.
+                InUseGb = Math.Round(total - available - (modified ?? 0), 3),
+                ModifiedGb = R(modified),
+                StandbyGb = R(standby),
+                FreeGb = R(raw?.FreeBytes / gb),
+                CachedGb = modified is not null || standby is not null ? R((modified ?? 0) + (standby ?? 0)) : null,
+                CommittedGb = perfInfo is { } c1 ? R(c1.CommitTotal * page / gb) : null,
+                CommitLimitGb = perfInfo is { } c2 ? R(c2.CommitLimit * page / gb) : null,
+                PagedPoolGb = perfInfo is { } c3 ? R(c3.KernelPaged * page / gb) : null,
+                NonPagedPoolGb = perfInfo is { } c4 ? R(c4.KernelNonpaged * page / gb) : null,
+            };
+        }
+
+        if (raw is not null)
+        {
+            foreach (var (number, ms2) in raw.DiskResponseMs)
+                if (Resolve("disk", number) is { } c)
+                    detail.Disks.Add(new PerfDisk { Id = c.Id, ResponseMs = ms2 });
+
+            var sharedLimit = detail.Memory is { } mem ? Math.Round(mem.TotalGb / 2, 1) : (double?)null;
+            foreach (var g in _gpus)
+            {
+                if (Resolve("gpu", g.Index.ToString(CultureInfo.InvariantCulture)) is not { } c) continue;
+                detail.Gpus.Add(new PerfGpu
+                {
+                    Id = c.Id,
+                    Engines = raw.GpuEngines.TryGetValue(g.Index, out var e) ? e : new(),
+                    SharedGb = raw.GpuSharedGb.TryGetValue(g.Index, out var s) ? R(s) : null,
+                    SharedLimitGb = sharedLimit,
+                    DedicatedGb = g.Integrated ? null : g.DedicatedMemoryGb,
+                });
+            }
+        }
+
+        var nics = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces().ToDictionary(n => n.Id, StringComparer.OrdinalIgnoreCase);
+        foreach (var a in _network.Adapters)
+        {
+            if (Resolve("net", a.Name) is not { } c) continue;
+            var net = new PerfNet { Id = c.Id, Type = a.Type, SpeedMbps = a.SpeedMbps > 0 ? a.SpeedMbps : null };
+            if (nics.TryGetValue(a.Id, out var nic))
+            {
+                try
+                {
+                    if (nic.Speed > 0) net.SpeedMbps = nic.Speed / 1_000_000.0;
+                    foreach (var ua in nic.GetIPProperties().UnicastAddresses)
+                    {
+                        if (ua.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) net.IPv4.Add(ua.Address.ToString());
+                        else if (ua.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6) net.IPv6.Add(ua.Address.ToString());
+                    }
+                }
+                catch (System.Net.NetworkInformation.NetworkInformationException) { }
+            }
+            detail.Networks.Add(net);
+        }
+        return detail;
+
+        static double? R(double? v) => v is { } x ? Math.Round(x, 3) : null;
+    }
+
     /// <summary>Alertas abertos, mantidos pelo serviço (AlertService); vão em cada snapshot para o painel avisar.</summary>
     public IReadOnlyList<HwMon.Core.Alerts.AlertEvent> ActiveAlerts { get; set; } = [];
 

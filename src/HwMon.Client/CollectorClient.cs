@@ -187,6 +187,9 @@ public sealed class CollectorClient : IDisposable
     public Task<MachineDescriptor> MachineAsync(CancellationToken cancel = default) => GetAsync<MachineDescriptor>("v1/machine", cancel);
     public Task<TelemetrySnapshot> SnapshotAsync(CancellationToken cancel = default) => GetAsync<TelemetrySnapshot>("v1/snapshot", cancel);
 
+    /// <summary>Detalhes da aba Desempenho (serviço 0.16+; 404 nos anteriores).</summary>
+    public Task<PerfDetail> PerfAsync(CancellationToken cancel = default) => GetAsync<PerfDetail>("v1/perf", cancel);
+
     /// <summary>Histórico de uma métrica (coletor 0.6+). from/to em segundos Unix.</summary>
     public Task<HistoryResponse> HistoryAsync(string component, string metric, long from, long to, int points = 600, CancellationToken cancel = default)
         => GetAsync<HistoryResponse>($"v1/history?component={Uri.EscapeDataString(component)}&metric={Uri.EscapeDataString(metric)}&from={from}&to={to}&points={points}", cancel);

@@ -32,6 +32,35 @@ internal static partial class Native
         return GlobalMemoryStatusEx(ref status) ? status : null;
     }
 
+    // ---------- Contagens do sistema (aba Desempenho) ----------
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PerformanceInformation
+    {
+        public uint Size;
+        public nuint CommitTotal;
+        public nuint CommitLimit;
+        public nuint CommitPeak;
+        public nuint PhysicalTotal;
+        public nuint PhysicalAvailable;
+        public nuint SystemCache;
+        public nuint KernelTotal;
+        public nuint KernelPaged;
+        public nuint KernelNonpaged;
+        public nuint PageSize;
+        public uint HandleCount;
+        public uint ProcessCount;
+        public uint ThreadCount;
+    }
+
+    [DllImport("psapi.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetPerformanceInfo(out PerformanceInformation info, uint size);
+
+    /// <summary>Processos, threads, identificadores, memória confirmada e pools (valores em páginas × PageSize).</summary>
+    public static PerformanceInformation? GetPerformance()
+        => GetPerformanceInfo(out var info, (uint)Marshal.SizeOf<PerformanceInformation>()) ? info : null;
+
     // ---------- Estado de energia do disco (não acorda o disco: handle sem acesso de leitura) ----------
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]

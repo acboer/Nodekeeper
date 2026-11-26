@@ -403,6 +403,8 @@ static async Task<int> RunAsync(string[] args, string? dataDir)
 
     // Processos mais pesados (medidos entre uma chamada e a seguinte; o painel pede a cada 3 s).
     api.MapGet("/processes", (HwMon.Core.Collection.ProcessMonitor monitor) => Results.Ok(monitor.Sample()));
+    // Aba Desempenho do painel (0.16+): núcleos, memória detalhada, motores da GPU, resposta dos discos, IPs.
+    api.MapGet("/perf", (EngineHost host) => Results.Ok(host.Engine!.PerfDetail()));
 
     // Histórico: from/to em segundos Unix (padrão: últimas 24 h); points = máximo de pontos devolvidos.
     api.MapGet("/history", (EngineHost host, string component, string metric, long? from, long? to, int? points) =>
