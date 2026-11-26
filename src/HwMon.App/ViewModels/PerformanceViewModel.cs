@@ -415,7 +415,7 @@ public sealed class PerformanceViewModel : ObservableObject
         foreach (var c in components.Where(c => c.Kind == ComponentKind.Cpu).Take(1))
             Devices.Add(new PerfDevice("cpu", c.Id, "CPU", c.Name, c.Detail) { ChartTitle = L.T("% de utilização") });
         foreach (var c in components.Where(c => c.Kind == ComponentKind.Ram).Take(1))
-            Devices.Add(new PerfDevice("memory", c.Id, L.T("Memória"), c.Detail ?? "", null) { ChartTitle = L.T("Uso de memória") });
+            Devices.Add(new PerfDevice("memory", c.Id, L.T("Memória"), c.Detail is null ? "" : L.T(c.Detail), null) { ChartTitle = L.T("Uso de memória") });
 
         var disks = components.Where(c => c.Kind == ComponentKind.Disk).ToList();
         for (var i = 0; i < disks.Count; i++)
@@ -424,7 +424,7 @@ public sealed class PerformanceViewModel : ObservableObject
             var letters = components.Where(v => v.Kind == ComponentKind.Volume && v.Parents.Contains(d.Id))
                 .Select(v => v.Name.Split(' ')[0]).Where(n => n.EndsWith(':')).ToList();
             var title = L.T("Disco {0}", i) + (letters.Count > 0 ? $" ({string.Join(" ", letters)})" : "");
-            Devices.Add(new PerfDevice("disk", d.Id, title, d.Name, d.Detail)
+            Devices.Add(new PerfDevice("disk", d.Id, title, d.Name, d.Detail is null ? null : L.T(d.Detail))
             {
                 ChartTitle = L.T("Tempo ativo"),
                 Chart2Title = L.T("Taxa de transferência do disco"),

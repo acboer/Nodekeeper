@@ -8,6 +8,13 @@ Console.OutputEncoding = System.Text.Encoding.UTF8;
 L.Use(null); // comandos no console (ex.: código de pareamento): idioma do Windows
 
 var dataDir = Option(args, "--dados");
+static int PrintBattery()
+{
+    Console.OutputEncoding = System.Text.Encoding.UTF8;
+    Console.WriteLine(HwMon.Core.Collection.LaptopBattery.Diagnose());
+    return 0;
+}
+
 var command = args.FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal) && a != dataDir);
 try
 {
@@ -22,6 +29,7 @@ try
         "status" => Status(dataDir),
         "sistema" => PrintSummary(),
         "perifericos" => PrintPeripherals(),
+        "bateria" => PrintBattery(),
         "benchmark" => await RunDiskBenchmark(args),
         "quadros" => await PrintFrames(),
         "teste" => await RunLoadBench(args.SkipWhile(a => a != "teste").Skip(1).FirstOrDefault()),

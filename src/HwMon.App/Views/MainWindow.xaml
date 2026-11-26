@@ -1374,7 +1374,7 @@
                             <Border Grid.Column="1" Style="{StaticResource IconChip}" Margin="8,0,10,0"><controls:Icon Kind="{Binding Card.Icon}"/></Border>
                             <StackPanel Grid.Column="2" VerticalAlignment="Center">
                                 <TextBlock Style="{StaticResource Text.CardTitle}" FontSize="16">
-                                    <Run Text="{Binding Card.Title, Mode=OneWay}"/><Run Text=" · histórico" Foreground="{DynamicResource Text.Secondary}" FontWeight="Normal"/>
+                                    <Run Text="{Binding Card.Title, Mode=OneWay}"/><Run Text=" · " Foreground="{DynamicResource Text.Secondary}" FontWeight="Normal"/><Run Text="{controls:T 'histórico'}" Foreground="{DynamicResource Text.Secondary}" FontWeight="Normal"/>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Card.Subtitle}" Style="{StaticResource Text.CardSubtitle}"/>
                             </StackPanel>

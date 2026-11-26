@@ -99,7 +99,7 @@ public static class SystemCollector
                     SpeedMts = Wmi.Get<int?>(m, "ConfiguredClockSpeed") ?? Wmi.Get<int?>(m, "Speed"),
                     Manufacturer = Wmi.Str(m, "Manufacturer"),
                     PartNumber = Wmi.Str(m, "PartNumber"),
-                    Type = (Wmi.Get<int?>(m, "SMBIOSMemoryType")) switch { 26 => "DDR4", 34 => "DDR5", 24 => "DDR3", null => null, var t => $"tipo {t}" },
+                    Type = (Wmi.Get<int?>(m, "SMBIOSMemoryType")) switch { 26 => "DDR4", 34 => "DDR5", 24 => "DDR3", 35 => "LPDDR5", 30 => "LPDDR4", 29 => "LPDDR3", null => null, var t => $"tipo {t}" },
                 });
             }
         });

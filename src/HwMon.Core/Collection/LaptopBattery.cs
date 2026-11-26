@@ -29,10 +29,14 @@ public sealed class LaptopBattery
     public string? Chemistry { get; }
     public double? DesignWh => _designWh;
 
-    /// <summary>Bateria presente? (GetSystemPowerStatus: flag 128 = sem bateria, 255 = desconhecido.)</summary>
+    /// <summary>
+    /// Bateria presente? Pelo WMI (Win32_Battery) ou pelo GetSystemPowerStatus (flag 128 = sem bateria). No serviço
+    /// (sessão 0) o GetSystemPowerStatus pode responder "desconhecido" (255): então vale o WMI.
+    /// </summary>
     public static LaptopBattery? Detect(List<string> problems)
     {
-        if (!GetSystemPowerStatus(out var s) || s.BatteryFlag == 128 || s.BatteryFlag == 255) return null;
+        var power = GetSystemPowerStatus(out var s) && s.BatteryFlag is not 128 and not 255;
+        if (!power && Win32Battery() is null) return null;
         string name = "Bateria";
         string? chemistry = null;
         try
@@ -98,10 +102,14 @@ public sealed class LaptopBattery
     {
         if (DateTimeOffset.Now - _staticRead >= TimeSpan.FromMinutes(10)) ReadStatic();
         var readings = new List<Reading>();
-        if (!GetSystemPowerStatus(out var s))
+        // Carga e tomada: GetSystemPowerStatus; se ele não souber (255, comum no serviço), o Win32_Battery.
+        var known = GetSystemPowerStatus(out var s) && s.BatteryFlag != 255 && s.BatteryLifePercent <= 100;
+        if (!known && Win32Battery() is { } w)
         {
-            readings.Add(Reading.Failed("battery", "0", "charge", "%", Source, "GetSystemPowerStatus falhou"));
-            return readings;
+            s.BatteryLifePercent = (byte)Math.Clamp(w.Charge ?? 255, 0, 255);
+            s.ACLineStatus = (byte)(w.Status is 2 or 3 or 6 or 7 or 8 or 9 or 11 ? 1 : 0); // na tomada, carregada ou carregando
+            s.BatteryFlag = (byte)(w.Status is 6 or 7 or 8 or 9 or 11 ? 8 : 0);
+            s.BatteryLifeTime = w.RunMinutes is > 0 and < 71582788 ? (uint)(w.RunMinutes.Value * 60) : 0xFFFFFFFF;
         }
 
         // Potência e capacidade restante (mWh, mW). ChargeRate/DischargeRate valem 0 quando não se aplicam.
@@ -171,6 +179,54 @@ public sealed class LaptopBattery
 
         if (PowerMode() is { } mode) readings.Add(Reading.Ok("battery", "0", "power_mode", mode.Value, "", Source, mode.Name));
         return readings;
+    }
+
+    /// <summary>Win32_Battery: carga (%), BatteryStatus (1 na bateria, 2 na tomada, 3 carregada, 6–9/11 carregando) e minutos.</summary>
+    private static (int? Charge, int? Status, int? RunMinutes)? Win32Battery()
+    {
+        try
+        {
+            var b = Wmi.Query(Wmi.Cimv2, "SELECT EstimatedChargeRemaining, BatteryStatus, EstimatedRunTime FROM Win32_Battery").FirstOrDefault();
+            if (b is null) return null;
+            return (Wmi.Get<int?>(b, "EstimatedChargeRemaining"), Wmi.Get<int?>(b, "BatteryStatus"), Wmi.Get<int?>(b, "EstimatedRunTime"));
+        }
+        catch (Exception ex) when (ex is ManagementException or COMException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Texto para "Nodekeeper.Service.exe bateria": o que cada fonte responde (diagnóstico em notebooks).</summary>
+    public static string Diagnose()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine(GetSystemPowerStatus(out var s)
+            ? $"GetSystemPowerStatus: tomada={s.ACLineStatus} flag={s.BatteryFlag} carga={s.BatteryLifePercent} segundos={s.BatteryLifeTime}"
+            : "GetSystemPowerStatus: falhou");
+        sb.AppendLine(Win32Battery() is { } w ? $"Win32_Battery: carga={w.Charge} estado={w.Status} minutos={w.RunMinutes}" : "Win32_Battery: nenhuma");
+        foreach (var cls in new[] { "BatteryStaticData", "BatteryFullChargedCapacity", "BatteryStatus", "BatteryCycleCount" })
+        {
+            try
+            {
+                var rows = Wmi.Query(@"rootwmi", $"SELECT * FROM {cls}");
+                sb.AppendLine($"{cls}: {rows.Count} linha(s)");
+                foreach (var r in rows)
+                    foreach (var p in r.Properties)
+                        if (p.Value is not null && p.Name is not ("InstanceName" or "Tag" or "Active"))
+                            sb.AppendLine($"  {p.Name} = {(p.Value is Array a ? string.Join(",", a.Cast<object>()) : p.Value)}");
+            }
+            catch (Exception ex) when (ex is ManagementException or COMException or UnauthorizedAccessException)
+            {
+                sb.AppendLine($"{cls}: erro {ex.Message}");
+            }
+        }
+        var problems = new List<string>();
+        var battery = Detect(problems);
+        sb.AppendLine(battery is null ? "Detectada: não" : $"Detectada: sim ({battery.Name}, {battery.Chemistry}, {battery.DesignWh} Wh)");
+        if (battery is not null)
+            foreach (var r in battery.Sample()) sb.AppendLine($"  {r.Metric} = {r.Value} {r.Unit} [{r.State}] {r.Note}");
+        foreach (var p in problems) sb.AppendLine("(!) " + p);
+        return sb.ToString();
     }
 
     /// <summary>Modo de energia do Windows 10/11 (Configurações › Energia): 0 eficiência, 1 equilibrado, 2 desempenho.</summary>
