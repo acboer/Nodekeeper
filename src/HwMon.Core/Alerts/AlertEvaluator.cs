@@ -143,7 +143,8 @@ public sealed class AlertEvaluator
                 var bad = h?.Value is { } code && code is not 0 and not 5;
                 return new Condition(bad, false, h?.Value, h?.Note);
             }
-            case AlertKind.VolumeFull when c.Kind == ComponentKind.Volume:
+            // Só volumes com letra: partição de recuperação vive cheia e não é para o usuário mexer.
+            case AlertKind.VolumeFull when c.Kind == ComponentKind.Volume && ComponentKind.HasDriveLetter(c.Name):
             {
                 var used = ok(c.Id, "used")?.Value;
                 var total = ok(c.Id, "total")?.Value;

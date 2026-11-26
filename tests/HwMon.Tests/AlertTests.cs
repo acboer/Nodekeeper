@@ -74,6 +74,18 @@ public class AlertEvaluatorTests
     }
 
     [Fact]
+    public void Volume_without_a_letter_does_not_alert()
+    {
+        var e = new AlertEvaluator();
+        List<ComponentDescriptor> components = [new() { Id = "volume:rec", Kind = ComponentKind.Volume, Name = "SAMSUNG_REC2" }];
+        var values = new List<TelemetryValue> { V("volume:rec", "used", 99), V("volume:rec", "total", 100) };
+        e.Evaluate(T0, values, components, Rules());
+        Assert.Empty(e.Evaluate(T0.AddMinutes(10), values, components, Rules()).Started);
+        Assert.True(ComponentKind.HasDriveLetter("C: Sistema"));
+        Assert.False(ComponentKind.HasDriveLetter("SYSTEM"));
+    }
+
+    [Fact]
     public void Charging_battery_and_unknown_disk_health_do_not_alert()
     {
         var e = new AlertEvaluator();

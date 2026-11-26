@@ -802,7 +802,8 @@ public sealed class MachineViewModel : ObservableObject
     {
         ComponentKind.Network => c.Detail?.Contains("virtual", StringComparison.OrdinalIgnoreCase) == true
                                  || c.Detail?.Contains("Hyper-V", StringComparison.OrdinalIgnoreCase) == true,
-        ComponentKind.Volume => L.Is(c.Name, "Sem letra"),
+        // Volume sem letra (recuperação, EFI, partições do fabricante como SAMSUNG_REC): escondido e fora do vermelho.
+        ComponentKind.Volume => !ComponentKind.HasDriveLetter(c.Name),
         _ => false,
     };
 
