@@ -68,6 +68,17 @@ public static class Format
         "duty" or "fan_duty" => "Controle da ventoinha",
         "charge_eta" => "Tempo para carregar",
         "runtime" => "Bateria restante",
+        "charge" => "Carga",
+        "discharge" => "Consumo da bateria",
+        "charge_rate" => "Potência de carga",
+        "capacity" => "Capacidade atual",
+        "design" => "Capacidade de fábrica",
+        "remaining" => "Energia restante",
+        "cycles" => "Ciclos de carga",
+        "power_mode" => "Modo de energia",
+        "plugged" => "Na tomada",
+        "signal" => "Sinal do Wi-Fi",
+        "link_speed" => "Velocidade do link",
         _ => metric,
     };
 

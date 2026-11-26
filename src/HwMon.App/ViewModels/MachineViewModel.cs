@@ -572,7 +572,20 @@ public sealed class MachineViewModel : ObservableObject
     public string Text(string component, string metric)
     {
         var v = Value(component, metric);
+        if (component.StartsWith("battery:", StringComparison.Ordinal))
+        {
+            switch (metric)
+            {
+                case "health" when v?.Value is { } h:
+                    return Format.Number(h, "%") + (v.Note is { } n ? $" ({L.T(n)})" : "");
+                case "power_mode":
+                    return v?.Note is { } mode ? L.T(mode) : "—";
+                case "cycles" when v?.Value is { } cycles:
+                    return cycles.ToString("N0", Format.Pt);
+            }
+        }
         if (metric == "health") return v?.Note ?? "—";
+        if (metric == "signal" && v?.Value is not null && v.Note is { } network) return $"{Format.Value(v)} · {L.T(network)}";
         if (component.StartsWith("volume:", StringComparison.Ordinal) && metric == "used_pct")
             return UsedFraction(component) is { } f ? Format.Number(f * 100, "%") : "—";
         return Format.Value(v);
@@ -662,6 +675,8 @@ public sealed class MachineViewModel : ObservableObject
                   || (c.Name + " " + c.Detail).Contains("Wireless", StringComparison.OrdinalIgnoreCase) ? "kind-wifi" : "kind-network";
             var card = Card(c, L.T("REDE"), "rx", icon);
             card.Lines.Add(Line(c.Id, "tx"));
+            card.Lines.Add(Line(c.Id, "signal")); // Wi-Fi: some nos adaptadores com cabo (sem valor)
+            card.Lines.Add(Line(c.Id, "link_speed"));
             card.Lines.Add(Line(c.Id, "rx_today"));
             card.Lines.Add(Line(c.Id, "tx_today"));
             card.DetailLines.Add(Line(c.Id, "rx_total"));
@@ -671,6 +686,21 @@ public sealed class MachineViewModel : ObservableObject
 
         var peripherals = comps.Where(c => c.Kind == ComponentKind.Peripheral).Select(c =>
             Card(c, L.T("BATERIA"), "battery", PeripheralIcon(c))).ToList();
+
+        // Bateria do notebook: carga, potência, tempo, saúde (capacidade de hoje ÷ de fábrica), ciclos e modo de energia.
+        var laptopBattery = comps.Where(c => c.Kind == ComponentKind.Battery).Select(c =>
+        {
+            var card = Card(c, L.T("BATERIA"), "charge", "metric-battery", wide: false);
+            card.Lines.Add(Line(c.Id, "discharge"));
+            card.Lines.Add(Line(c.Id, "charge_rate"));
+            card.Lines.Add(Line(c.Id, "health"));
+            card.Lines.Add(Line(c.Id, "capacity"));
+            card.Lines.Add(Line(c.Id, "cycles"));
+            card.Lines.Add(Line(c.Id, "power_mode"));
+            card.DetailLines.Add(Line(c.Id, "design"));
+            card.DetailLines.Add(Line(c.Id, "remaining"));
+            return card;
+        }).ToList();
 
         // Energia: soma do que tem sensor de consumo (CPU e GPUs). O resto do PC não é medido.
         var energy = new List<CardViewModel>();
@@ -707,8 +737,8 @@ public sealed class MachineViewModel : ObservableObject
 
         // NAS: armazenamento primeiro, como nos sistemas de NAS.
         var order = IsNas
-            ? new[] { disks, net, cpu, ram, gpu, energy, peripherals, fanCards }
-            : new[] { cpu, gpu, ram, energy, disks, net, peripherals, fanCards };
+            ? new[] { disks, net, cpu, ram, gpu, energy, laptopBattery, peripherals, fanCards }
+            : new[] { laptopBattery, cpu, gpu, ram, energy, disks, net, peripherals, fanCards };
         // Ordem arrastada pelo usuário (se houver); cartões que não estavam na lista ficam no fim, na ordem padrão.
         var defaults = order.SelectMany(g => g).ToList();
         if (_settings.Current.CardOrder.TryGetValue(MachineId, out var saved))
@@ -755,7 +785,8 @@ public sealed class MachineViewModel : ObservableObject
 
     /// <summary>Bateria baixa: até 10 % crítico, até 20 % atenção (carregando não conta).</summary>
     public static Severity BatterySeverity(TelemetryValue? v)
-        => v?.Value is not { } pct || v.State != ReadingState.Ok || v.Note?.StartsWith("carreg", StringComparison.Ordinal) == true || v.Note?.StartsWith("charg", StringComparison.Ordinal) == true ? Severity.Normal
+        => v?.Value is not { } pct || v.State != ReadingState.Ok || v.Note?.StartsWith("carreg", StringComparison.Ordinal) == true || v.Note?.StartsWith("charg", StringComparison.Ordinal) == true
+           || v.Note == "na tomada" ? Severity.Normal
             : pct <= 10 ? Severity.Critical : pct <= 20 ? Severity.Caution : Severity.Normal;
 
     /// <summary>"AMD Ryzen 9 9950X 16-Core Processor" → "AMD Ryzen 9 9950X"; "Intel(R) Core(TM) i5-14400" → "Intel Core i5-14400".</summary>
@@ -891,10 +922,11 @@ public sealed class MachineViewModel : ObservableObject
                 ComponentKind.Disk => L.T("tempo ativo"),
                 ComponentKind.Network => L.T("recebendo · enviando {0}", Text(main.ComponentId, "tx")),
                 // "carregando", "na bateria" ou "última leitura às 14:02" (aparelho desligado/em repouso)
-                ComponentKind.Peripheral => PeripheralCaption(main.ComponentId, v),
+                ComponentKind.Peripheral or ComponentKind.Battery => PeripheralCaption(main.ComponentId, v),
                 _ => null,
             };
             if (card.Kind == ComponentKind.Peripheral) worst = BatterySeverity(v);
+            if (card.Kind == ComponentKind.Battery && BatterySeverity(v) > worst) worst = BatterySeverity(v);
         }
         else if (card.Kind == ComponentKind.Fan)
         {
@@ -929,6 +961,8 @@ public sealed class MachineViewModel : ObservableObject
 
     private Severity LineSeverity(CardViewModel card, MetricLine line, TelemetryValue? v)
     {
+        if (line.Metric == "health" && card.Kind == ComponentKind.Battery)
+            return v?.Value is not { } health ? Severity.Normal : health < 60 ? Severity.Critical : health < 80 ? Severity.Caution : Severity.Normal;
         if (line.Metric == "health")
             return v?.Note is null || L.Is(v.Note, "Saudável") ? Severity.Normal : L.Is(v.Note, "Atenção") ? Severity.Caution : Severity.Critical;
         if (v?.Value is not { } x || line.Metric != "temp") return Severity.Normal;

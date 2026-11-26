@@ -371,6 +371,24 @@ public sealed class HistoryStore : IDisposable
         if (gameSeconds is not null)
             foreach (var (d, s) in gameSeconds(from, to, DayOf)) Day(d).GameSeconds = s;
 
+        // Notebook. A bateria é lida a cada 10 s (amostras ≠ segundos): a fração fora da tomada vezes o tempo ligado.
+        var battery = components.FirstOrDefault(x => x.Kind == ComponentKind.Battery)?.Id;
+        long OnOf(UsageDay d, long samples) => d.OnSeconds > 0 ? d.OnSeconds : samples * 10;
+        if (Find(battery, "plugged") is { } plugged)
+            foreach (var x in PerDay(plugged))
+            {
+                var d = Day(x.Day);
+                d.BatterySeconds = (long)(Math.Clamp(1 - x.Sum / Math.Max(1, x.N), 0, 1) * OnOf(d, x.N));
+            }
+        if (Find(battery, "discharge") is { } discharge)
+            foreach (var x in PerDay(discharge))
+            {
+                var d = Day(x.Day);
+                d.BatteryWh = x.Sum / Math.Max(1, x.N) * OnOf(d, x.N) / 3600; // W médios (0 na tomada) × tempo ligado
+            }
+        if (Find(battery, "health") is { } health)
+            foreach (var x in PerDay(health)) Day(x.Day).BatteryHealth = x.Sum / Math.Max(1, x.N);
+
         response.Days = daily.Values.ToList();
         response.CpuTempPeak = Peak(Find(cpu?.Id, "temp"));
         response.GpuTempPeak = Peak(Find(gpu?.Id, "temp"));

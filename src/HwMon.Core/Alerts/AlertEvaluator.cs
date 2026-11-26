@@ -161,6 +161,26 @@ public sealed class AlertEvaluator
                 if (charging) return new Condition(false, false, pct, null);
                 return new Condition(pct <= rule.Threshold, pct <= rule.Threshold + 5, pct, null);
             }
+            case AlertKind.LaptopBatteryLow when c.Kind == ComponentKind.Battery:
+            {
+                var b = ok(c.Id, "charge");
+                if (b?.Value is not { } pct) return new Condition(false, false, null, null);
+                if (b.Note != "na bateria") return new Condition(false, false, pct, null); // na tomada ou carregando
+                return new Condition(pct <= rule.Threshold, pct <= rule.Threshold + 5, pct, null);
+            }
+            case AlertKind.LaptopCharged when c.Kind == ComponentKind.Battery:
+            {
+                var b = ok(c.Id, "charge");
+                if (b?.Value is not { } pct) return new Condition(false, false, null, null);
+                if (b.Note == "na bateria") return new Condition(false, false, pct, null); // tirou da tomada: passou
+                return new Condition(pct >= rule.Threshold, pct >= rule.Threshold - 5, pct, null);
+            }
+            case AlertKind.LaptopBatteryHealth when c.Kind == ComponentKind.Battery:
+            {
+                var h = ok(c.Id, "health")?.Value;
+                if (h is null) return new Condition(false, false, null, null);
+                return new Condition(h <= rule.Threshold, h <= rule.Threshold + 2, h, null);
+            }
             default:
                 return null;
         }
@@ -170,6 +190,6 @@ public sealed class AlertEvaluator
     {
         if (a is null) return b;
         if (b is null) return a;
-        return kind == AlertKind.BatteryLow ? Math.Min(a.Value, b.Value) : Math.Max(a.Value, b.Value);
+        return kind is AlertKind.BatteryLow or AlertKind.LaptopBatteryLow or AlertKind.LaptopBatteryHealth ? Math.Min(a.Value, b.Value) : Math.Max(a.Value, b.Value);
     }
 }

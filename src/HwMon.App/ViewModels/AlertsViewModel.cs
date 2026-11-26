@@ -9,6 +9,7 @@ using HwMon.App.Services;
 using HwMon.Client;
 using HwMon.Core;
 using HwMon.Core.Alerts;
+using HwMon.Core.Telemetry;
 
 namespace HwMon.App.ViewModels;
 
@@ -42,12 +43,15 @@ public sealed class AlertRuleItem : ObservableObject
     public bool HasThreshold => Kind != AlertKind.DiskHealth;
     public string Unit => Kind is AlertKind.CpuTemp or AlertKind.GpuTemp ? "°C" : "%";
     /// <summary>"acima de" (temperatura, volume) ou "abaixo de" (bateria).</summary>
-    public string Comparison => L.T(Kind == AlertKind.BatteryLow ? "abaixo de" : "acima de");
+    public string Comparison => L.T(Kind is AlertKind.BatteryLow or AlertKind.LaptopBatteryLow or AlertKind.LaptopBatteryHealth ? "abaixo de" : "acima de");
     public string Description => L.T(Kind switch
     {
         AlertKind.DiskHealth => "Avisa quando o Windows marcar um disco como \"Atenção\" ou \"Com problema\" (SMART).",
         AlertKind.BatteryLow => "Mouse, headset e controles fora do carregador.",
         AlertKind.VolumeFull => "Cada volume com letra (C:, D:...).",
+        AlertKind.LaptopBatteryLow => "Notebook fora da tomada.",
+        AlertKind.LaptopCharged => "Notebook na tomada: avisa para tirar e poupar a bateria.",
+        AlertKind.LaptopBatteryHealth => "Capacidade de hoje comparada à de fábrica.",
         _ => "",
     });
     public bool Enabled { get => _enabled; set => Set(ref _enabled, value); }
@@ -255,7 +259,11 @@ public sealed class AlertsViewModel : ObservableObject
     private void Show(MachineViewModel m, AlertsResponse r)
     {
         Rules.Clear();
-        foreach (var rule in r.Rules) Rules.Add(new AlertRuleItem(rule));
+        // Regras do notebook só em máquina com bateria (as escondidas voltam com o padrão do serviço ao salvar).
+        var laptop = m.Descriptor?.Components.Any(c => c.Kind == ComponentKind.Battery) == true;
+        foreach (var rule in r.Rules)
+            if (laptop || rule.Kind is not (AlertKind.LaptopBatteryLow or AlertKind.LaptopCharged or AlertKind.LaptopBatteryHealth))
+                Rules.Add(new AlertRuleItem(rule));
         NtfyUrl = r.Channels.NtfyUrl;
         DiscordWebhook = r.Channels.DiscordWebhook;
         TelegramToken = r.Channels.TelegramToken;

@@ -15,12 +15,17 @@ Free and open source (MIT). Windows 10/11, 64-bit. English and Portuguese.
 
 - **Live dashboard**: CPU, GPU, RAM, disks, volumes, network, fans, power and peripherals, with 24-hour sparklines
   and alerts (yellow/red) for heat, full disks and failing drives.
+- **Performance tab**: Task Manager-style graphs for CPU (overall or per core), memory, each disk, network adapter
+  and GPU (engines and memory), with the temperature drawn over the usage and 10 min / 1 h / 24 h views from history.
 - **Several machines**: install the service on each PC (gaming rig, NAS, render nodes) and watch them all from one
   dashboard. Pair a PC by clicking **Allow** on it, or with a one-time code. Turn an offline PC on from the
   dashboard (Wake-on-LAN).
-- **Alerts**: hot CPU or GPU, failing disk, full volume, low headset/mouse battery, PC not responding. Rules run in
+- **Alerts**: hot CPU or GPU, failing disk, full volume, low headset/mouse or laptop battery, PC not responding. Rules run in
   each PC's service, so they work with the dashboard closed. Windows notifications on your PC, and optionally ntfy,
   Discord or Telegram on your phone.
+- **Laptops**: battery charge, drain or charging power (W), time left, health (today's capacity vs design) and
+  charge cycles, Wi-Fi signal, power mode, time on battery per day, and alerts for low battery, charged (unplug at
+  80 %) and worn battery.
 - **Desktop widget**: one widget that cycles through your PCs, or one widget per PC. Vertical or horizontal, resizable,
   compact or visual style, adjustable transparency, global shortcut (Ctrl+Shift+F9 by default).
 - **Game mode**: FPS, 1 % low and frame-time overlay on top of full-screen games, read from Windows' own events.

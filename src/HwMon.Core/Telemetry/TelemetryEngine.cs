@@ -56,6 +56,8 @@ public sealed class TelemetryEngine : IDisposable
     private PerfCounterCollector _perf = null!;
     private LhmCollector? _lhm;
     private Collection.Peripherals.PeripheralCollector? _peripherals;
+    private LaptopBattery? _battery;
+    private readonly List<string> _batteryProblems = new();
     private readonly List<string> _periphProblems = new();
     private DateTimeOffset _lastPeripheralScan;
     private int _descriptorVersion;
@@ -100,6 +102,8 @@ public sealed class TelemetryEngine : IDisposable
             _lhm.MapIdentities(_gpus, _storage.PhysicalDisks);
         }
 
+        _battery = LaptopBattery.Detect(_batteryProblems);
+
         if (_options.PeripheralsEnabled)
         {
             _peripherals = new Collection.Peripherals.PeripheralCollector(_periphProblems,
@@ -130,7 +134,7 @@ public sealed class TelemetryEngine : IDisposable
         Store(_storage.SampleVolumes());
         foreach (var d in _storage.PhysicalDisks) Store(_storage.SampleDisk(d, smart: false));
 
-        FlushProblems(_initProblems, _perfProblems, _storageProblems, _lhmProblems, _netProblems, _periphProblems);
+        FlushProblems(_initProblems, _perfProblems, _storageProblems, _lhmProblems, _netProblems, _periphProblems, _batteryProblems);
         _log($"Pronto: {_components.Count} componentes, {_storage.PhysicalDisks.Count} discos, {_gpus.Count} GPUs, " +
              $"{_peripherals?.Devices.Count ?? 0} periféricos, LHM {(_lhm?.IsOpen == true ? "ativo" : "desligado")}.");
     }
@@ -173,6 +177,10 @@ public sealed class TelemetryEngine : IDisposable
             foreach (var a in _network.Adapters)
                 Register("net", a.Name, "network:" + a.Id.Trim('{', '}').ToLowerInvariant(), ComponentKind.Network, a.Name,
                     $"{a.Description}{(a.IPv4.Count > 0 ? " · " + string.Join(", ", a.IPv4) : "")}{(a.Physical == false ? " · virtual" : "")}", order++);
+
+            if (_battery is { } b)
+                Register("battery", "0", "battery:0", ComponentKind.Battery, b.Name,
+                    string.Join(" · ", new[] { b.Chemistry, b.DesignWh is { } d ? $"{d:0} Wh de fábrica" : null }.Where(x => x is not null)), order++);
 
             RegisterPeripherals();
             _descriptorVersion++;
@@ -298,7 +306,22 @@ public sealed class TelemetryEngine : IDisposable
         };
         if (_lhm?.IsOpen == true) tasks.Add(Loop("LHM", _options.LhmInterval, LhmTick, () => [_lhmProblems]));
         if (_peripherals is not null) tasks.Add(Loop("periféricos", _options.PeripheralInterval, PeripheralTick, () => [_periphProblems]));
+        tasks.Add(Loop("bateria e Wi-Fi", TimeSpan.FromSeconds(10), BatteryWifiTick, () => [_batteryProblems]));
         return Task.WhenAll(tasks);
+    }
+
+    /// <summary>Bateria do notebook (se houver) e sinal do Wi-Fi de cada adaptador conectado, a cada 10 s.</summary>
+    private void BatteryWifiTick()
+    {
+        if (_battery is not null) Store(_battery.Sample());
+        foreach (var link in WifiSignal.Read())
+        {
+            var adapter = _network.Adapters.FirstOrDefault(a => Guid.TryParse(a.Id, out var g) && g == link.Interface);
+            if (adapter is null) continue;
+            var note = link.Ssid is { Length: > 0 } ssid ? $"rede {ssid}" : null; // em português: o painel traduz pelo modelo "rede {0}"
+            Store(Reading.Ok("net", adapter.Name, "signal", link.SignalQuality, "%", "wlan", note));
+            Store(Reading.Ok("net", adapter.Name, "link_speed", Math.Max(link.RxMbps, link.TxMbps), "Mbit/s", "wlan", note));
+        }
     }
 
     /// <summary>

@@ -13,6 +13,8 @@ public sealed class HistoryRecorder(HistoryStore store)
 {
     /// <summary>Capacidades e contadores desde o boot: não mudam ou não fazem sentido como gráfico.</summary>
     private static readonly HashSet<string> Skip = ["total", "vram_total", "rx_total", "tx_total", "health", "charge_eta", "runtime"];
+    /// <summary>A saúde do disco é um código (não vai para o histórico); a da bateria do notebook é % e vai (queda ao longo dos meses).</summary>
+    private static bool IsBatteryHealth(TelemetryValue v) => v.Metric == "health" && v.Component.StartsWith("battery:", StringComparison.Ordinal);
 
     private sealed class Acc
     {
@@ -43,7 +45,7 @@ public sealed class HistoryRecorder(HistoryStore store)
         }
         foreach (var v in snapshot.Values)
         {
-            if (v.Value is not { } x || v.State != ReadingState.Ok || Skip.Contains(v.Metric) || double.IsNaN(x) || double.IsInfinity(x)) continue;
+            if (v.Value is not { } x || v.State != ReadingState.Ok || (Skip.Contains(v.Metric) && !IsBatteryHealth(v)) || double.IsNaN(x) || double.IsInfinity(x)) continue;
             var id = store.SeriesId(v.Component, v.Metric, v.Unit);
             if (!_acc.TryGetValue(id, out var accs))
                 _acc[id] = accs = HistoryStore.Tiers.Select(_ => new Acc()).ToArray();

@@ -149,4 +149,8 @@ public sealed class UsageDay
     public double DiskReadMB { get; set; }
     public double DiskWriteMB { get; set; }
     public long GameSeconds { get; set; }
+    /// <summary>Notebook: tempo fora da tomada, energia tirada da bateria (Wh) e saúde média do dia (%). 0.16+.</summary>
+    public long? BatterySeconds { get; set; }
+    public double? BatteryWh { get; set; }
+    public double? BatteryHealth { get; set; }
 }

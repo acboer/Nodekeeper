@@ -16,6 +16,12 @@ public enum AlertKind
     VolumeFull,
     /// <summary>Periférico com bateria abaixo do limite (%), fora do carregador.</summary>
     BatteryLow,
+    /// <summary>Notebook na bateria com carga abaixo do limite (%). 0.16+.</summary>
+    LaptopBatteryLow,
+    /// <summary>Notebook na tomada chegou ao limite (%): para quem tira da tomada em 80 % e poupa a bateria. Desligado por padrão.</summary>
+    LaptopCharged,
+    /// <summary>Saúde da bateria do notebook (capacidade de hoje ÷ de fábrica) abaixo do limite (%).</summary>
+    LaptopBatteryHealth,
 }
 
 /// <summary>Uma regra. Avaliada no serviço de cada máquina, mesmo com o painel fechado.</summary>
@@ -54,6 +60,9 @@ public sealed class AlertSettings
         new() { Kind = AlertKind.DiskHealth, Minutes = 0 },
         new() { Kind = AlertKind.VolumeFull, Threshold = 95, Minutes = 5 },
         new() { Kind = AlertKind.BatteryLow, Threshold = 15, Minutes = 0 },
+        new() { Kind = AlertKind.LaptopBatteryLow, Threshold = 20, Minutes = 0 },
+        new() { Kind = AlertKind.LaptopCharged, Threshold = 80, Minutes = 0, Enabled = false },
+        new() { Kind = AlertKind.LaptopBatteryHealth, Threshold = 70, Minutes = 0 },
     ];
 
     /// <summary>Uma regra de cada tipo, nesta ordem; tipos que faltam (arquivo antigo) voltam com o padrão.</summary>
@@ -68,7 +77,9 @@ public sealed class AlertSettings
             {
                 AlertKind.CpuTemp or AlertKind.GpuTemp => Math.Clamp(r.Threshold, 40, 120),
                 AlertKind.VolumeFull => Math.Clamp(r.Threshold, 50, 100),
-                AlertKind.BatteryLow => Math.Clamp(r.Threshold, 1, 90),
+                AlertKind.BatteryLow or AlertKind.LaptopBatteryLow => Math.Clamp(r.Threshold, 1, 90),
+                AlertKind.LaptopCharged => Math.Clamp(r.Threshold, 50, 100),
+                AlertKind.LaptopBatteryHealth => Math.Clamp(r.Threshold, 30, 95),
                 _ => 0,
             };
         }

@@ -74,6 +74,26 @@ public class AlertEvaluatorTests
     }
 
     [Fact]
+    public void Laptop_battery_low_charged_and_health()
+    {
+        var e = new AlertEvaluator();
+        List<ComponentDescriptor> laptop = [new() { Id = "battery:0", Kind = ComponentKind.Battery, Name = "Samsung" }];
+        var rules = Rules();
+        rules.Single(r => r.Kind == AlertKind.LaptopCharged).Enabled = true; // desligado por padrão
+
+        // Na bateria, 18 %: fraca. Saúde 65 % (limite 70): avisa.
+        var started = e.Evaluate(T0, [V("battery:0", "charge", 18, "na bateria"), V("battery:0", "health", 65)], laptop, rules).Started;
+        Assert.Equal([AlertKind.LaptopBatteryLow, AlertKind.LaptopBatteryHealth], started.Select(a => a.Kind).OrderBy(k => k).ToList());
+
+        // Ligou na tomada: "fraca" passa depois de 1 minuto; ao chegar a 80 % avisa para tirar.
+        e.Evaluate(T0.AddMinutes(1), [V("battery:0", "charge", 19, "carregando"), V("battery:0", "health", 65)], laptop, rules);
+        var ended = e.Evaluate(T0.AddMinutes(2), [V("battery:0", "charge", 25, "carregando"), V("battery:0", "health", 65)], laptop, rules).Ended;
+        Assert.Equal(AlertKind.LaptopBatteryLow, Assert.Single(ended).Kind);
+        var full = e.Evaluate(T0.AddMinutes(60), [V("battery:0", "charge", 81, "carregando"), V("battery:0", "health", 65)], laptop, rules).Started;
+        Assert.Equal(AlertKind.LaptopCharged, Assert.Single(full).Kind);
+    }
+
+    [Fact]
     public void Volume_without_a_letter_does_not_alert()
     {
         var e = new AlertEvaluator();
@@ -129,7 +149,7 @@ public class AlertEvaluatorTests
     {
         var s = new AlertSettings { Rules = [new AlertRule { Kind = AlertKind.CpuTemp, Threshold = 500, Minutes = -3 }] };
         s.Normalize();
-        Assert.Equal(5, s.Rules.Count);
+        Assert.Equal(Enum.GetValues<AlertKind>().Length, s.Rules.Count);
         Assert.Equal(120, s.Rules[0].Threshold);
         Assert.Equal(0, s.Rules[0].Minutes);
     }

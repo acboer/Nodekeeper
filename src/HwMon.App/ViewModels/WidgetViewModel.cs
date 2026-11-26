@@ -271,13 +271,22 @@ public sealed class WidgetViewModel : ObservableObject
                     : eta?.Value is { } minutes && eta.State == HwMon.Core.Model.ReadingState.Ok ? L.T("carregando · cheia em {0}", Format.Duration(minutes))
                     : L.T("carregando · calculando o tempo");
             }
+            if (row.Metric == "charge")
+            {
+                // Bateria do notebook: tempo restante na bateria, ou para encher na tomada.
+                var state = m.Value(row.ComponentId, "charge")?.Note;
+                var left = m.Value(row.ComponentId, state == "carregando" ? "charge_eta" : "runtime");
+                row.Detail = left?.Value is { } min && left.State == HwMon.Core.Model.ReadingState.Ok
+                    ? state == "carregando" ? L.T("carregando · cheia em {0}", Format.Duration(min)) : L.T("{0} restantes", Format.Duration(min))
+                    : state is null ? null : L.T(state);
+            }
             var v = m.Value(row.ComponentId, row.Metric);
             row.Value = m.Text(row.ComponentId, row.Metric);
             row.IsStale = row.Metric == "used_pct" ? m.IsStale(m.Value(row.ComponentId, "used")) : m.IsStale(v);
             row.Fraction = row.Metric switch
             {
                 "used_pct" => m.UsedFraction(row.ComponentId),
-                "usage" or "load" or "active" or "temp" or "wear" or "battery" => v?.Value / 100,
+                "usage" or "load" or "active" or "temp" or "wear" or "battery" or "charge" or "signal" => v?.Value / 100,
                 _ => null,
             };
             row.Severity = row.Metric switch
@@ -286,7 +295,7 @@ public sealed class WidgetViewModel : ObservableObject
                 "temp" when v?.Value >= 75 => Severity.Caution,
                 "used_pct" when row.Fraction >= 0.9 => Severity.Critical,
                 "used_pct" when row.Fraction >= 0.8 => Severity.Caution,
-                "battery" => MachineViewModel.BatterySeverity(v),
+                "battery" or "charge" => MachineViewModel.BatterySeverity(v),
                 "health" when v?.Note is not null && !L.Is(v.Note, "Saudável") => Severity.Critical,
                 _ => Severity.Normal,
             };
@@ -301,6 +310,7 @@ public sealed class WidgetViewModel : ObservableObject
         ComponentKind.Gpu => (2, "gpu", "GPU", "kind-gpu"),
         ComponentKind.Disk or ComponentKind.Volume => (3, "storage", L.T("Armazenamento"), "kind-storage"),
         ComponentKind.Network => (4, "net", L.T("Rede"), "kind-network"),
+        ComponentKind.Battery => (5, "battery", L.T("Bateria"), "metric-battery"),
         ComponentKind.Peripheral => (5, "periph", L.T("Periféricos"), "metric-battery"),
         ComponentKind.Fan => (6, "fan", L.T("Ventoinhas"), "kind-fan"),
         _ => (9, "other", L.T("Outros"), "nav-overview"),
@@ -395,6 +405,7 @@ public sealed class WidgetViewModel : ObservableObject
             foreach (var d in comps.Where(c => c.Kind == ComponentKind.Disk)) Add(d.Id, "temp");
         }
         foreach (var p in comps.Where(c => c.Kind == ComponentKind.Peripheral)) Add(p.Id, "battery");
+        Add(comps.FirstOrDefault(c => c.Kind == ComponentKind.Battery)?.Id, "charge");
         return keys;
     }
 

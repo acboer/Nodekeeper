@@ -254,7 +254,18 @@ public sealed class UsageMachine : ObservableObject
         foreach (var (key, label, unit) in BarMetrics) Choices.Add(new BarChoice("usage-" + machine.MachineId, key, label, unit));
         Choices[0].IsSelected = true;
         _choice = Choices[0];
-        foreach (var c in Choices) c.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(BarChoice.IsSelected) && ((BarChoice)s!).IsSelected) { _choice = (BarChoice)s!; BuildBars(); } };
+        foreach (var c in Choices) Watch(c);
+    }
+
+    private void Watch(BarChoice c)
+        => c.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(BarChoice.IsSelected) && ((BarChoice)s!).IsSelected) { _choice = (BarChoice)s!; BuildBars(); } };
+
+    /// <summary>Opção que só existe em algumas máquinas (bateria do notebook).</summary>
+    private void AddChoice(string key, string label, string unit)
+    {
+        var c = new BarChoice("usage-" + Machine.MachineId, key, label, unit);
+        Watch(c);
+        Choices.Add(c);
     }
 
     private static readonly (string Key, string Label, string Unit)[] BarMetrics =
@@ -304,6 +315,23 @@ public sealed class UsageMachine : ObservableObject
         Stats.Add(new StatItem(L.T("Rede"), "↓ " + Format.Number(days.Sum(d => d.NetRxMB), "MB"), "↑ " + L.T("{0} enviados", Format.Number(days.Sum(d => d.NetTxMB), "MB"))));
         Stats.Add(new StatItem(L.T("Disco"), L.T("{0} gravados", Format.Number(days.Sum(d => d.DiskWriteMB), "MB")), L.T("{0} lidos", Format.Number(days.Sum(d => d.DiskReadMB), "MB"))));
 
+        // Notebook: tempo na bateria e saúde (a primeira e a última do período, para ver a queda).
+        if (days.Any(d => d.BatterySeconds is not null))
+        {
+            var onBattery = days.Sum(d => d.BatterySeconds ?? 0);
+            var drained = days.Sum(d => d.BatteryWh ?? 0);
+            Stats.Add(new StatItem(L.T("Na bateria"), H(onBattery), drained > 0 ? L.T("{0} tirados da bateria", Format.Number(drained, "Wh")) : L.T("sempre na tomada")));
+            var healthDays = days.Where(d => d.BatteryHealth is not null).ToList();
+            if (healthDays.Count > 0)
+                Stats.Add(new StatItem(L.T("Saúde da bateria"), Format.Number(healthDays[^1].BatteryHealth!.Value, "%"),
+                    healthDays.Count > 1 ? L.T("era {0} em {1}", Format.Number(healthDays[0].BatteryHealth!.Value, "%"), Format.DayMonth(HistoryHubViewModel.Local(healthDays[0].Date))) : L.T("capacidade de hoje ÷ de fábrica")));
+            if (Choices.All(c => c.Key != "battery"))
+            {
+                AddChoice("battery", L.T("Na bateria"), "h");
+                if (healthDays.Count > 0) AddChoice("battery_health", L.T("Saúde da bateria"), "%");
+            }
+        }
+
         var since = HistoryHubViewModel.Local(data.Since);
         var parts = new List<string>();
         if (data.Gpu is { } gpu) parts.Add(gpu);
@@ -341,6 +369,8 @@ public sealed class UsageMachine : ObservableObject
                     "cpu_temp" => items.Select(x => x.CpuTempMax ?? 0).DefaultIfEmpty(0).Max(),
                     "gpu_temp" => items.Select(x => x.GpuTempMax ?? 0).DefaultIfEmpty(0).Max(),
                     "net" => items.Sum(x => x.NetRxMB + x.NetTxMB),
+                    "battery" => items.Sum(x => x.BatterySeconds ?? 0) / 3600.0,
+                    "battery_health" => items.Where(x => x.BatteryHealth is not null).Select(x => x.BatteryHealth!.Value).DefaultIfEmpty(0).Average(),
                     _ => items.Sum(x => x.DiskWriteMB),
                 };
                 var label = _monthly ? d.ToString("MMM/yy", Format.Pt) : data.Days.Count <= 8 ? d.ToString("ddd dd", Format.Pt) : Format.DayMonth(d);
@@ -349,6 +379,7 @@ public sealed class UsageMachine : ObservableObject
                 {
                     "on" => HistoryHubViewModel.Hours(on),
                     "games" => HistoryHubViewModel.Hours(items.Sum(x => x.GameSeconds)),
+                    "battery" => HistoryHubViewModel.Hours(items.Sum(x => x.BatterySeconds ?? 0)),
                     "net" => Format.Number(value, "MB"),
                     _ => Format.Number(value, Unit),
                 };
@@ -356,6 +387,7 @@ public sealed class UsageMachine : ObservableObject
                 {
                     "net" => $"↓ {Format.Number(items.Sum(x => x.NetRxMB), "MB")} · ↑ {Format.Number(items.Sum(x => x.NetTxMB), "MB")}",
                     "energy" when on > 0 => L.T("média de {0} ligada", Format.Number(value * 3600 / on, "W")),
+                    "battery" => L.T("{0} tirados da bateria", Format.Number(items.Sum(x => x.BatteryWh ?? 0), "Wh")),
                     "cpu_temp" or "gpu_temp" => L.T("ligada {0}", HistoryHubViewModel.Hours(on)),
                     _ => on > 0 ? L.T("ligada {0}", HistoryHubViewModel.Hours(on)) : L.T("desligada"),
                 };

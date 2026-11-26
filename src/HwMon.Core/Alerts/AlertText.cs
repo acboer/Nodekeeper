@@ -14,6 +14,9 @@ public static class AlertText
         AlertKind.DiskHealth => "Saúde do disco",
         AlertKind.VolumeFull => "Volume quase cheio",
         AlertKind.BatteryLow => "Bateria fraca",
+        AlertKind.LaptopBatteryLow => "Bateria do notebook fraca",
+        AlertKind.LaptopCharged => "Notebook carregado",
+        AlertKind.LaptopBatteryHealth => "Saúde da bateria do notebook",
         _ => kind.ToString(),
     });
 
@@ -30,7 +33,9 @@ public static class AlertText
             AlertKind.CpuTemp or AlertKind.GpuTemp => L.T("{0} chegou a {1} °C (limite {2} °C).", e.Subject, v, limit),
             AlertKind.DiskHealth => L.T("{0}: o Windows informa \"{1}\". Faça backup e confira o disco.", e.Subject, L.T(e.Note ?? "Com problema")),
             AlertKind.VolumeFull => L.T("{0} está {1} % cheio (limite {2} %).", e.Subject, v, limit),
-            AlertKind.BatteryLow => L.T("{0} está com {1} % de bateria.", e.Subject, v),
+            AlertKind.BatteryLow or AlertKind.LaptopBatteryLow => L.T("{0} está com {1} % de bateria.", e.Subject, v),
+            AlertKind.LaptopCharged => L.T("A bateria chegou a {0} % na tomada (limite {1} %). Já pode tirar da tomada.", v, limit),
+            AlertKind.LaptopBatteryHealth => L.T("A bateria guarda {0} % da capacidade de fábrica (limite {1} %). Pense em trocá-la.", v, limit),
             _ => e.Subject,
         };
         return e.End is null ? text : L.T("Resolvido: {0}", text);

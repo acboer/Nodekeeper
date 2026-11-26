@@ -121,12 +121,15 @@ public static class SystemBatteries
                 if (!SetupDiGetDeviceProperty(set, ref data, ref key, out var type, buffer, (uint)buffer.Length, out var size, 0)
                     || type != 0x3 || size < 1) continue; // DEVPROP_TYPE_BYTE
                 var level = buffer[0];
-                // Desconectado (propriedade existe e diz falso): fica de fora; volta sozinho quando reconectar.
-                var connectedKey = ConnectedKey;
-                if (SetupDiGetDeviceProperty(set, ref data, ref connectedKey, out var connectedType, buffer, (uint)buffer.Length, out _, 0)
-                    && connectedType == 0x11 && buffer[0] == 0) continue; // DEVPROP_TYPE_BOOLEAN
                 if (level > 100) continue;
                 var instance = String(set, ref data, InstanceIdKey, buffer);
+                // Bluetooth LE desconectado (propriedade existe e diz falso): fica de fora; volta sozinho quando reconectar.
+                // Só no LE: o nó "Hands-Free AG" de fones clássicos (BTHENUM) some quando o fone desconecta, e com ele a
+                // propriedade podia dizer falso com o fone conectado (FreeBuds SE 2 não aparecia).
+                var connectedKey = ConnectedKey;
+                if (instance?.StartsWith("BTHLE", StringComparison.OrdinalIgnoreCase) == true
+                    && SetupDiGetDeviceProperty(set, ref data, ref connectedKey, out var connectedType, buffer, (uint)buffer.Length, out _, 0)
+                    && connectedType == 0x11 && buffer[0] == 0) continue; // DEVPROP_TYPE_BOOLEAN
                 var name = String(set, ref data, FriendlyNameKey, buffer) ?? String(set, ref data, DescriptionKey, buffer);
                 if (instance is null || string.IsNullOrWhiteSpace(name)) continue;
                 list.Add((instance, name.Trim(), level));

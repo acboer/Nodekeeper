@@ -23,6 +23,8 @@ public static class ComponentKind
     public const string Fan = "fan";
     /// <summary>Periférico sem fio com bateria (headset, mouse, teclado). Detalhe: "Headset · Lightspeed".</summary>
     public const string Peripheral = "peripheral";
+    /// <summary>Bateria do notebook (0.16+). Detalhe: "Li-ion · 63 Wh de fábrica".</summary>
+    public const string Battery = "battery";
 
     /// <summary>Volume com letra ("C: Sistema"); os sem letra são partições do Windows ou do fabricante.</summary>
     public static bool HasDriveLetter(string name) => name.Length >= 2 && char.IsAsciiLetter(name[0]) && name[1] == ':';
