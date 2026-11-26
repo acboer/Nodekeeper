@@ -77,6 +77,7 @@ public sealed class AlertsViewModel : ObservableObject
     private MachineViewModel? _selected;
     private bool _isLoading;
     private string? _status;
+    private string? _historyStatus;
     private string? _error;
     private bool _supported = true;
     private string? _ntfyUrl, _discordWebhook, _telegramToken, _telegramChatId;
@@ -200,6 +201,8 @@ public sealed class AlertsViewModel : ObservableObject
     public bool IsLoading { get => _isLoading; private set => Set(ref _isLoading, value); }
     /// <summary>Resultado da última ação ("Regras salvas", "ntfy: ok · Discord: falhou").</summary>
     public string? Status { get => _status; private set => Set(ref _status, value); }
+    /// <summary>Resultado de "Limpar histórico", mostrado junto do histórico.</summary>
+    public string? HistoryStatus { get => _historyStatus; private set => Set(ref _historyStatus, value); }
     public string? Error { get => _error; private set { Set(ref _error, value); Raise(nameof(HasError)); } }
     public bool HasError => _error is not null;
     /// <summary>Serviço da máquina tem alertas (0.15+).</summary>
@@ -223,6 +226,7 @@ public sealed class AlertsViewModel : ObservableObject
         if (_selected is not { } m) return;
         IsLoading = true;
         Status = null;
+        HistoryStatus = null;
         Error = null;
         try
         {
@@ -265,7 +269,7 @@ public sealed class AlertsViewModel : ObservableObject
                 Machine = m.Name,
                 Title = AlertText.RuleName(e.Kind),
                 Body = AlertText.Body(new AlertEvent { Kind = e.Kind, Subject = e.Subject, Value = e.Value, Threshold = e.Threshold, Note = e.Note }),
-                When = e.End is { } end ? L.T("de {0} até {1}", Format.When(e.Start), Format.When(end)) : L.T("desde {0}", Format.When(e.Start)),
+                When = e.End is { } end ? L.T("de {0} até {1}", Format.When(e.Start), Format.When(end)) : L.T("em andamento desde {0}", Format.When(e.Start)),
                 Active = e.End is null,
             });
         }
@@ -277,6 +281,7 @@ public sealed class AlertsViewModel : ObservableObject
         if (_selected is not { } m || IsLoading) return;
         IsLoading = true;
         Status = null;
+        HistoryStatus = null;
         Error = null;
         try
         {
@@ -325,6 +330,9 @@ public sealed class AlertsViewModel : ObservableObject
     {
         await client.ClearAlertHistoryAsync();
         Show(_selected!, await client.AlertsAsync());
-        Status = L.T("Histórico apagado.");
+        var open = History.Count(h => h.Active);
+        HistoryStatus = open == 0
+            ? L.T("Histórico apagado.")
+            : L.T("Histórico apagado. Alertas em andamento ({0}) ficam até terminar.", open);
     });
 }

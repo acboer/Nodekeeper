@@ -1140,6 +1140,8 @@
                                     <Button Content="Limpar histórico" Style="{StaticResource FlatButton}" Margin="8,0,0,0" Command="{Binding ClearHistoryCommand}"/>
                                 </StackPanel>
                             </Grid>
+                            <TextBlock Text="{Binding HistoryStatus}" Style="{StaticResource Caption}" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0"
+                                       Visibility="{Binding HistoryStatus, Converter={StaticResource NullToVisibility}}"/>
                             <TextBlock Text="Nenhum alerta registrado." Style="{StaticResource Caption}" FontSize="13" Margin="0,8,0,0"
                                        Visibility="{Binding HasHistory, Converter={StaticResource BoolToCollapsed}}"/>
                             <ItemsControl ItemsSource="{Binding History}" Margin="0,6,0,0">
@@ -1151,11 +1153,17 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel>
-                                                <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"/>
+                                                <TextBlock x:Name="HistTitle" Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"/>
                                                 <TextBlock Text="{Binding Body}" Style="{StaticResource Caption}" FontSize="12" TextWrapping="Wrap"/>
                                             </StackPanel>
-                                            <TextBlock Grid.Column="1" Text="{Binding When}" Style="{StaticResource Caption}" FontSize="12" Margin="12,0,0,0"/>
+                                            <TextBlock x:Name="HistWhen" Grid.Column="1" Text="{Binding When}" Style="{StaticResource Caption}" FontSize="12" Margin="12,0,0,0"/>
                                         </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Active}" Value="True">
+                                                <Setter TargetName="HistTitle" Property="Foreground" Value="{DynamicResource Status.CautionText}"/>
+                                                <Setter TargetName="HistWhen" Property="Foreground" Value="{DynamicResource Status.CautionText}"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
