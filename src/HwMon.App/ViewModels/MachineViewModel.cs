@@ -577,7 +577,7 @@ public sealed class MachineViewModel : ObservableObject
             switch (metric)
             {
                 case "health" when v?.Value is { } h:
-                    return Format.Number(h, "%") + (v.Note is { } n ? $" ({L.T(n)})" : "");
+                    return Format.Number(h, "%"); // "54,3 de 59 Wh de fábrica" fica na dica (a linha não cabe)
                 case "power_mode":
                     return v?.Note is { } mode ? L.T(mode) : "—";
                 case "cycles" when v?.Value is { } cycles:
@@ -893,6 +893,16 @@ public sealed class MachineViewModel : ObservableObject
             line.Note = v is null ? null : $"{(v.Note is null ? "" : L.T(v.Note) + " · ")}" + L.T("fonte: {0} · {1}", v.Source, v.Time.ToString("HH:mm:ss", Format.Pt));
             line.Severity = LineSeverity(card, line, v);
             if (line.Severity > worst) worst = line.Severity;
+        }
+        // Notebook: só a potência que vale agora (consumo na bateria, potência de carga carregando).
+        if (card.Kind == ComponentKind.Battery)
+        {
+            var state = Value(card.ComponentId, "charge")?.Note;
+            foreach (var line in card.Lines)
+            {
+                if (line.Metric == "discharge") line.HasValue &= state == "na bateria";
+                if (line.Metric == "charge_rate") line.HasValue &= state == "carregando";
+            }
         }
         // Ventoinha parada (0 RPM) sem nada ligado: esconde a linha.
         if (card.Kind == ComponentKind.Fan)
