@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nodekeeper · Hardware monitor for every PC you own</title>
+<meta name="description" content="Free, open-source hardware monitor for Windows. Temperatures, usage, fans, disks, network, battery, in-game FPS and benchmarks for all the PCs in your home or studio, in one dashboard.">
+<meta name="theme-color" content="#0E0C14">
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="img/icon-256.png">
+<link rel="canonical" href="https://nodekeeper.app/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Nodekeeper · Hardware monitor for every PC you own">
+<meta property="og:description" content="Free and open source. Temperatures, usage, disks, battery, in-game FPS and benchmarks for all your Windows PCs, in one dashboard.">
+<meta property="og:url" content="https://nodekeeper.app/">
+<meta property="og:image" content="https://nodekeeper.app/img/overview.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="fonts/manrope-bold.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="Nodekeeper">
+      <img src="img/icon.svg" alt="" width="32" height="32">
+      <span>nodekeeper</span>
+    </a>
+    <nav class="links" aria-label="Sections">
+      <a href="#features" data-i18n="nav.features">Features</a>
+      <a href="#video" data-i18n="nav.video">Video</a>
+      <a href="#install" data-i18n="nav.install">Install</a>
+      <a href="#trust" data-i18n="nav.trust">Privacy &amp; safety</a>
+      <a href="https://github.com/acboer/Nodekeeper">GitHub</a>
+    </nav>
+    <div class="nav-end">
+      <button class="lang" type="button" id="lang" aria-label="Português">PT</button>
+      <a class="btn btn-sm btn-primary dl" href="https://github.com/acboer/Nodekeeper/releases" data-i18n="nav.download">Download</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<section class="hero wrap">
+  <div class="hero-text">
+    <p class="eyebrow" data-i18n="hero.eyebrow">Free &amp; open source · Windows 10/11</p>
+    <h1 data-i18n="hero.title">One keeper for <span class="grad">every PC you own.</span></h1>
+    <p class="lead" data-i18n="hero.lead">Temperatures, usage, fans, disks, network, battery, in-game FPS and benchmarks for your gaming PC, your NAS and your render nodes. In one dashboard and an always-on-top desktop widget.</p>
+    <div class="cta">
+      <a class="btn btn-primary btn-lg dl" href="https://github.com/acboer/Nodekeeper/releases">
+        <svg class="ic" aria-hidden="true"><use href="img/icons.svg#metric-download"/></svg>
+        <span data-i18n="hero.download">Download for Windows</span>
+      </a>
+      <a class="btn btn-lg" href="https://github.com/acboer/Nodekeeper" data-i18n="hero.github">View on GitHub</a>
+    </div>
+    <p class="meta"><span id="version" data-i18n="hero.meta">Latest release on GitHub</span> · <span data-i18n="hero.meta2">64-bit · English and Portuguese · MIT license</span></p>
+  </div>
+  <figure class="shot hero-shot">
+    <img src="img/overview.jpg" width="1542" height="1071" alt="Nodekeeper overview with three PCs: workstation, NAS and HTPC" data-i18n-alt="alt.overview">
+  </figure>
+  <ul class="pills" aria-label="Highlights">
+    <li data-i18n="pill.lan">LAN only</li>
+    <li data-i18n="pill.accounts">No accounts</li>
+    <li data-i18n="pill.telemetry">No telemetry</li>
+    <li data-i18n="pill.anticheat">No anti-cheat risk</li>
+  </ul>
+</section>
+
+<section id="video" class="wrap section">
+  <h2 data-i18n="video.title">See it in 30 seconds</h2>
+  <div class="video" id="player" data-youtube="ZgrFGqEMjv0">
+    <button type="button" class="video-facade" aria-label="Play video" data-i18n-aria="video.play">
+      <img src="img/video-poster.jpg" alt="" width="1920" height="1080" loading="lazy">
+      <span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>
+    </button>
+  </div>
+</section>
+
+<section id="features" class="wrap section">
+  <h2 data-i18n="features.title">Everything your PCs are doing, in one place</h2>
+  <p class="sub" data-i18n="features.sub">Install the service on each PC and watch them all from one dashboard.</p>
+  <div class="grid features">
+    <article class="card"><svg class="ic" aria-hidden="true"><use href="img/icons.svg#nav-overview"/></svg>
+      <h3 data-i18n="f1.t">Live dashboard</h3>
+      <p data-i18n="f1.d">CPU, GPU, RAM, disks, volumes, network, fans, power and peripherals, with 24-hour charts and yellow/red states for heat, full disks and failing drives.</p></article>
+    <article class="card"><svg class="ic" aria-hidden="true"><use href="img/icons.svg#metric-usage"/></svg>
+      <h3 data-i18n="f2.t">Performance tab</h3>
+      <p data-i18n="f2.d">Task Manager-style graphs for CPU (overall or per core), memory, disks, network and GPU engines, with the temperature drawn over the usage and 10 min / 1 h / 24 h views.</p></article>
+    <article class="card"><svg class="ic" aria-hidden="true"><use href="img/icons.svg#machine-workstation"/></svg>
+      <h3 data-i18n="f3.t">All your machines</h3>
+      <p data-i18n="f3.d">Gaming rig, NAS, HTPC, render nodes. Pair a PC by clicking Allow on it, or with a one-time code. Wake an offline PC from the dashboard.</p></article>
+    <article class="card"><svg class="ic" aria-hidden="true"><use href="img/icons.svg#feature-alerts"/></svg>
+      <h3 data-i18n="f4.t">Alerts on your phone</h3>
+      <p data-i18n="f4.d">Hot CPU or GPU, failing disk, full volume, low battery, PC not responding. Windows notifications, plus ntfy, Discord or Telegram. Rules run in the service, so they work with the dashboard closed.</p></article>
+    <article class="card"><svg class="ic" aria-hidden="true"><use href="img/icons.svg#kind-gamepad"/></svg>
+      <h3 data-i18n="f5.t">In-game FPS overlay</h3>
+      <p data-i18n="f5.d">FPS, 1 % low and frame time on top of full-screen games, read from Windows' own events. Nothing is injected into the game.</p></article>
+    <article class="card"><svg class="ic" aria-hidden="true"><use href="img/icons.svg#action-widget"/></svg>
+      <h3 data-i18n="f6.t">Desktop widget</h3>
+      <p data-i18n="f6.d">One widget that cycles through your PCs, or one per PC. Vertical or horizontal, compact or visual, adjustable transparency and a global shortcut.</p></article>
+    <article class="card"><svg class="ic" aria-hidden="true"><use href="img/icons.svg#metric-battery"/></svg>
+      <h3 data-i18n="f7.t">Made for laptops too</h3>
+      <p data-i18n="f7.d">Battery charge, drain in watts, time left, health and charge cycles, Wi-Fi signal, power mode, and alerts for low, charged and worn batteries.</p></article>
+    <article class="card"><svg class="ic" aria-hidden="true"><use href="img/icons.svg#feature-history"/></svg>
+      <h3 data-i18n="f8.t">Two years of history</h3>
+      <p data-i18n="f8.d">Every metric recorded; game sessions with FPS, temperatures and power; daily time on, energy and traffic; CSV export.</p></article>
+    <article class="card"><svg class="ic" aria-hidden="true"><use href="img/icons.svg#action-metrics"/></svg>
+      <h3 data-i18n="f9.t">Benchmarks</h3>
+      <p data-i18n="f9.d">Disk, network between two PCs, CPU, memory, GPU (DirectX 11 compute) and a stability test with error checking and throttling detection.</p></article>
+  </div>
+</section>
+
+<section class="wrap section" aria-labelledby="gallery-title">
+  <h2 id="gallery-title" data-i18n="gallery.title">A closer look</h2>
+  <div class="gallery">
+    <figure class="shot wide"><img src="img/overlay.jpg" alt="In-game FPS overlay: FPS, 1 % low, frame time, GPU and CPU" loading="lazy" data-i18n-alt="alt.overlay"><figcaption data-i18n="cap.overlay">In-game overlay</figcaption></figure>
+    <figure class="shot"><img src="img/dashboard.jpg" alt="Machine dashboard with 24-hour charts" loading="lazy" data-i18n-alt="alt.dashboard"><figcaption data-i18n="cap.dashboard">Machine dashboard</figcaption></figure>
+    <figure class="shot"><img src="img/widgets.jpg" alt="One desktop widget per PC" loading="lazy" data-i18n-alt="alt.widgets"><figcaption data-i18n="cap.widgets">Desktop widgets</figcaption></figure>
+    <figure class="shot"><img src="img/game-history.jpg" alt="Game history with FPS, 1 % low and power" loading="lazy" data-i18n-alt="alt.games"><figcaption data-i18n="cap.games">Game history</figcaption></figure>
+    <figure class="shot"><img src="img/usage-history.jpg" alt="Daily usage: time on, energy, temperatures, network and disk" loading="lazy" data-i18n-alt="alt.usage"><figcaption data-i18n="cap.usage">Daily usage</figcaption></figure>
+    <figure class="shot"><img src="img/benchmarks.jpg" alt="Disk and processor benchmarks" loading="lazy" data-i18n-alt="alt.bench"><figcaption data-i18n="cap.bench">Benchmarks</figcaption></figure>
+    <figure class="shot"><img src="img/system.jpg" alt="System summary: OS, motherboard, BIOS, CPU and memory" loading="lazy" data-i18n-alt="alt.system"><figcaption data-i18n="cap.system">System summary</figcaption></figure>
+  </div>
+</section>
+
+<section id="install" class="wrap section">
+  <h2 data-i18n="install.title">Up and running in a minute</h2>
+  <ol class="steps">
+    <li class="card"><span class="num">1</span>
+      <h3 data-i18n="s1.t">Download and run the installer</h3>
+      <p data-i18n="s1.d">It isn't code-signed yet, so Windows SmartScreen warns: click <b>More info › Run anyway</b>.</p></li>
+    <li class="card"><span class="num">2</span>
+      <h3 data-i18n="s2.t">Pick what this PC does</h3>
+      <p data-i18n="s2.d"><b>Full</b> for the PC you sit at, <b>Service only</b> for a PC you watch from another one (NAS, server, render node), or <b>Dashboard only</b>.</p></li>
+    <li class="card"><span class="num">3</span>
+      <h3 data-i18n="s3.t">Add your other PCs</h3>
+      <p data-i18n="s3.d"><b>Add machine</b>, find it by name, <b>Request access</b>, then click <b>Allow</b> on that PC. A PC with only the service shows a pairing code instead.</p></li>
+  </ol>
+  <div class="pair">
+    <figure class="shot"><img src="img/add-machine.jpg" alt="Add machine: find the PC and check its certificate" loading="lazy" data-i18n-alt="alt.add"></figure>
+    <figure class="shot"><img src="img/access-request.jpg" alt="Access request shown on the other PC" loading="lazy" data-i18n-alt="alt.request"></figure>
+  </div>
+</section>
+
+<section id="trust" class="wrap section">
+  <h2 data-i18n="trust.title">What it installs, and why</h2>
+  <p class="sub" data-i18n="trust.sub">No surprises. This is everything the installer changes on your system.</p>
+  <div class="grid two">
+    <article class="card"><svg class="ic" aria-hidden="true"><use href="img/icons.svg#kind-cpu"/></svg>
+      <h3 data-i18n="t1.t">A Windows service, as administrator</h3>
+      <p data-i18n="t1.d">Reading motherboard, CPU and disk sensors (and the frame events for the FPS overlay) requires administrator rights. The <b>Nodekeeper</b> service does that work, so the dashboard runs as a normal user.</p></article>
+    <article class="card"><svg class="ic" aria-hidden="true"><use href="img/icons.svg#metric-health"/></svg>
+      <h3 data-i18n="t2.t">The PawnIO driver</h3>
+      <p data-i18n="t2.d">CPU temperature and power, fans and RAM temperature are read through <a href="https://pawnio.eu">PawnIO</a>, downloaded from the official project if it's missing. Other sensor tools use the same driver, so it stays when you uninstall.</p></article>
+    <article class="card"><svg class="ic" aria-hidden="true"><use href="img/icons.svg#kind-network"/></svg>
+      <h3 data-i18n="t3.t">One firewall rule, private networks only</h3>
+      <p data-i18n="t3.d">TCP 47821 on private and domain networks, never public Wi-Fi, so dashboards on your other PCs can reach the service. Traffic is HTTPS with a per-machine certificate pinned when you pair.</p></article>
+    <article class="card"><svg class="ic" aria-hidden="true"><use href="img/icons.svg#status-secure"/></svg>
+      <h3 data-i18n="t4.t">Your data stays home</h3>
+      <p data-i18n="t4.d">No telemetry, no accounts. The service only answers the dashboards you pair on your own network and never goes online. The dashboard checks GitHub once a day for updates, and you can turn that off.</p></article>
+  </div>
+
+  <div class="card signing">
+    <div>
+      <h3 data-i18n="sign.t">Not code-signed yet, and how to check it instead</h3>
+      <p data-i18n="sign.d">Nodekeeper is a solo project, and free signing for open source needs some public track record first. Meanwhile, every release is built by GitHub Actions from the tagged source, nothing is built on a developer machine, and each release links a VirusTotal scan of the installer. If Smart App Control is on, Windows blocks unsigned apps; it's fine to wait for a signed release.</p>
+    </div>
+    <div class="signing-links">
+      <a class="btn notes" href="https://github.com/acboer/Nodekeeper/releases" data-i18n="sign.vt">Release notes and VirusTotal scan</a>
+      <a class="btn" href="https://github.com/acboer/Nodekeeper/blob/main/CODE_SIGNING_POLICY.md" data-i18n="sign.policy">Code signing policy</a>
+      <a class="btn" href="https://github.com/acboer/Nodekeeper/blob/main/PRIVACY.md" data-i18n="sign.privacy">Privacy policy</a>
+    </div>
+  </div>
+</section>
+
+<section class="wrap section final">
+  <img src="img/icon.svg" alt="" width="72" height="72">
+  <h2 data-i18n="final.title">Free, and it stays free</h2>
+  <p class="sub" data-i18n="final.sub">Nodekeeper is MIT-licensed. If it helps you, a star on GitHub or a bug report helps the project grow.</p>
+  <div class="cta center">
+    <a class="btn btn-primary btn-lg dl" href="https://github.com/acboer/Nodekeeper/releases">
+      <svg class="ic" aria-hidden="true"><use href="img/icons.svg#metric-download"/></svg>
+      <span data-i18n="hero.download">Download for Windows</span>
+    </a>
+    <a class="btn btn-lg" href="https://github.com/acboer/Nodekeeper" data-i18n="final.star">★ Star on GitHub</a>
+    <a class="btn btn-lg" href="https://github.com/acboer/Nodekeeper/issues" data-i18n="final.issue">Report a bug</a>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <span>© 2026 Nodekeeper · <span data-i18n="foot.mit">MIT license</span></span>
+    <span class="foot-links">
+      <a href="https://github.com/acboer/Nodekeeper">GitHub</a>
+      <a href="https://github.com/acboer/Nodekeeper/blob/main/PRIVACY.md" data-i18n="foot.privacy">Privacy</a>
+      <a href="https://github.com/acboer/Nodekeeper/blob/main/THIRD-PARTY-NOTICES.md" data-i18n="foot.notices">Third-party notices</a>
+    </span>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox" hidden><img alt=""></div>
+
+<script src="main.js"></script>
+</body>
+</html>
