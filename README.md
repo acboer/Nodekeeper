@@ -6,6 +6,8 @@ dashboard and an always-on-top desktop widget.
 
 Free and open source (MIT). Windows 10/11, 64-bit. English and Portuguese.
 
+**Website: [nodekeeper.app](https://nodekeeper.app)** · [Download](https://github.com/acboer/Nodekeeper/releases)
+
 > Formerly **Corewise** (previews 0.12–0.13). Installing Nodekeeper over it keeps your paired PCs, history and
 > settings; the old service, shortcuts and folders are replaced automatically.
 
